@@ -36,6 +36,11 @@ window.LectNoteEditor = (function() {
       }
     });
 
+    // Track cursor position on click and navigation
+    textarea.addEventListener('keyup', updateStats);
+    textarea.addEventListener('click', updateStats);
+    textarea.addEventListener('select', updateStats);
+
     // Attach toolbar button actions
     document.querySelectorAll('.tool-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -140,20 +145,40 @@ window.LectNoteEditor = (function() {
     const text = textarea.value;
     const lines = text.length === 0 ? 0 : text.split('\n').length;
     const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-    statsEl.textContent = `Lines: ${lines} | Words: ${words}`;
+
+    const selStart = textarea.selectionStart || 0;
+    const textBefore = text.substring(0, selStart);
+    const lineNum = textBefore.split('\n').length;
+    const colNum = selStart - textBefore.lastIndexOf('\n');
+
+    statsEl.textContent = `Ln ${lineNum}, Col ${colNum} · ${lines} lines · ${words} words`;
   }
 
   function markUnsaved() {
     if (saveStatusEl) {
-      saveStatusEl.textContent = '● Unsaved changes';
-      saveStatusEl.style.color = '#f59e0b';
+      const dot = saveStatusEl.querySelector('.status-dot');
+      const text = saveStatusEl.querySelector('.status-text');
+      if (dot && text) {
+        dot.className = 'status-dot unsaved';
+        text.textContent = 'Unsaved changes';
+      } else {
+        saveStatusEl.textContent = '● Unsaved changes';
+        saveStatusEl.style.color = '#f59e0b';
+      }
     }
   }
 
   function markSaved() {
     if (saveStatusEl) {
-      saveStatusEl.textContent = '✓ Saved';
-      saveStatusEl.style.color = '#10b981';
+      const dot = saveStatusEl.querySelector('.status-dot');
+      const text = saveStatusEl.querySelector('.status-text');
+      if (dot && text) {
+        dot.className = 'status-dot';
+        text.textContent = 'All changes saved';
+      } else {
+        saveStatusEl.textContent = '✓ Saved';
+        saveStatusEl.style.color = '#10b981';
+      }
     }
   }
 

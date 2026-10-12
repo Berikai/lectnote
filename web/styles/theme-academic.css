@@ -22,6 +22,7 @@ body.theme-academic {
 }
 
 .academic-paper {
+  position: relative;
   background: var(--ac-bg);
   max-width: 860px;
   margin: 30px auto;
@@ -75,13 +76,135 @@ body.theme-academic {
 
 .academic-paper h3 {
   font-size: 20px;
-  margin-top: 24px;
+  margin-top: 26px;
+  margin-bottom: 10px;
+}
+
+.academic-paper h4 {
+  font-family: 'Inter', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-top: 22px;
   margin-bottom: 8px;
 }
 
 .academic-paper p {
-  margin: 14px 0;
+  margin: 16px 0;
   text-align: justify;
+  line-height: 1.7;
+}
+
+/* Lists & Spacing */
+.academic-paper ul,
+.academic-paper ol {
+  margin: 16px 0 22px 0;
+  padding-left: 32px;
+}
+
+.academic-paper li {
+  margin: 8px 0;
+  padding-left: 2px;
+  line-height: 1.7;
+}
+
+.academic-paper li > p {
+  margin: 6px 0;
+}
+
+.academic-paper li > ul,
+.academic-paper li > ol {
+  margin: 6px 0 6px 20px;
+  padding-left: 20px;
+}
+
+.academic-paper li .katex-display {
+  margin: 12px 0 !important;
+}
+
+/* Horizontal Rule */
+.academic-paper hr {
+  border: none;
+  border-top: 1px solid var(--ac-border);
+  margin: 32px 0;
+}
+
+/* Blockquotes */
+.academic-paper blockquote {
+  border-left: 3px solid #2563eb;
+  padding: 10px 20px;
+  margin: 22px 0;
+  color: #475569;
+  background: #f8fafc;
+  border-radius: 0 4px 4px 0;
+}
+
+.academic-paper blockquote p {
+  margin: 6px 0;
+}
+
+/* Table Container & Responsive Scrolling */
+.academic-paper .table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  margin: 24px 0;
+  box-sizing: border-box;
+  border-radius: 4px;
+}
+
+.academic-paper .table-wrapper::-webkit-scrollbar {
+  height: 6px;
+  width: 0px;
+}
+.academic-paper .table-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+.academic-paper .table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.academic-paper .table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Tables */
+.academic-paper table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 14.5px;
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+
+.academic-paper th,
+.academic-paper td {
+  border: 1px solid var(--ac-border);
+  padding: 0.5em 0.65em;
+  text-align: left;
+  vertical-align: middle;
+  box-sizing: border-box;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.academic-paper th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #0f172a;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+/* Keep mathematical expressions intact as atomic units inside tables */
+.academic-paper table td .katex {
+  white-space: nowrap !important;
+  font-size: 0.95em;
 }
 
 .academic-paper code,
@@ -98,6 +221,27 @@ body.theme-academic {
 }
 
 /* Academic Rough Notation or Highlighting */
+.academic-paper .rn-wrapper,
+.rn-wrapper {
+  position: relative !important;
+  display: inline-block;
+  vertical-align: baseline;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.academic-paper .rn-wrapper.rn-wrapper-block,
+.rn-wrapper.rn-wrapper-block {
+  display: block;
+  position: relative !important;
+  width: fit-content;
+  max-width: 100%;
+  margin: 18px auto;
+  text-align: center;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
 .academic-paper .rn-elem {
   position: relative;
 }
@@ -117,13 +261,29 @@ body.theme-academic {
   border-radius: 2px;
 }
 
-.academic-paper .rn-block-box {
+.academic-paper .rn-elem[data-rn="box"],
+.academic-paper .rn-elem[data-rn="circle"] {
+  display: inline-block;
+}
+
+.academic-paper .rn-block-box,
+.academic-paper .rn-block-circle {
   border: 1.5px solid #2563eb;
   background: #eff6ff;
   border-radius: 4px;
-  margin: 20px 0;
-  padding: 12px;
+  margin: 0 !important;
+  padding: 8px 14px;
   text-align: center;
+  width: fit-content;
+  max-width: 100%;
+  display: block;
+  box-sizing: border-box;
+}
+
+.academic-paper .rn-block-box .katex-display,
+.academic-paper .rn-block-circle .katex-display {
+  margin: 4px 0 !important;
+  max-width: 100%;
 }
 
 /* Academic Callouts / Notes (Formal Theorem/Remark box) */
@@ -166,41 +326,201 @@ body.theme-academic {
 .academic-paper .sticky-note.sticky-tip .sticky-title { color: #065f46; }
 .academic-paper .sticky-note.sticky-warning .sticky-title { color: #92400e; }
 
+.academic-paper .sticky-note.sticky-insight {
+  border-left-color: #2563eb;
+  background: #f8fafc;
+}
+.academic-paper .sticky-note.sticky-insight .sticky-title { color: #1e3a8a; }
+
+.academic-paper .sticky-note.sticky-exam {
+  border-left-color: #7c3aed;
+  background: #faf5ff;
+}
+.academic-paper .sticky-note.sticky-exam .sticky-title { color: #5b21b6; }
+
 .academic-paper .sticky-body {
   font-family: 'Newsreader', serif;
   font-size: 18px;
 }
 
 /* Board Reference Card */
-.academic-paper .board-ref {
+.academic-paper .board-ref,
+.board-ref {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 12px;
   margin: 24px 0;
   page-break-inside: avoid;
   break-inside: avoid;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.academic-paper .board-ref-header {
+.academic-paper .board-ref-header,
+.board-ref-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e2e8f0;
   font-family: 'Inter', sans-serif;
   font-size: 12px;
 }
 
-.academic-paper .board-ref-tag {
-  background: #0f172a;
+.academic-paper .board-ref-tag,
+.board-ref-tag {
+  background: #1e3a8a;
   color: #ffffff;
   border-radius: 3px;
   font-weight: 600;
+  padding: 2px 8px;
+  font-size: 11.5px;
+  display: inline-flex;
+  align-items: center;
 }
 
-.academic-paper figcaption {
+.academic-paper .board-ref-filename,
+.board-ref-filename {
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  color: #64748b;
+  flex: 1;
+}
+
+.academic-paper .btn-inspect-board,
+.btn-inspect-board {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  color: #334155;
+  padding: 3px 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+.academic-paper .btn-inspect-board:hover,
+.btn-inspect-board:hover {
+  background: #1e3a8a;
+  color: #ffffff;
+  border-color: #1e3a8a;
+}
+
+.academic-paper .board-ref-img-wrapper,
+.board-ref-img-wrapper {
+  cursor: zoom-in;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #0f172a;
+  position: relative;
+}
+
+.academic-paper .board-ref img,
+.board-ref img {
+  width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+/* Multi-Photo Gallery Grid */
+.academic-paper .board-ref-gallery,
+.board-ref-gallery {
+  display: grid;
+  grid-template-columns: repeat(var(--gallery-columns, 2), minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .academic-paper .board-ref-gallery,
+  .board-ref-gallery {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.academic-paper .board-ref-gallery-item,
+.board-ref-gallery-item {
+  display: flex;
+  flex-direction: column;
+  background: #f1f5f9;
+  border: 1px solid var(--ac-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.academic-paper .board-ref-gallery-item .board-ref-img-wrapper,
+.board-ref-gallery-item .board-ref-img-wrapper {
+  height: 220px;
+  border-radius: 0;
+}
+
+.academic-paper .board-ref-gallery-item img,
+.board-ref-gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.academic-paper .board-ref-gallery-item:hover img,
+.board-ref-gallery-item:hover img {
+  transform: scale(1.02);
+}
+
+.academic-paper .board-ref-img-badge,
+.board-ref-img-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.academic-paper .board-ref-item-footer,
+.board-ref-item-footer {
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: #ffffff;
+  border-top: 1px solid var(--ac-border);
+}
+
+.academic-paper .board-ref-item-name,
+.board-ref-item-name {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.academic-paper figcaption,
+.board-ref figcaption {
   font-family: 'Inter', sans-serif;
   font-size: 13px;
   color: #64748b;
   font-style: italic;
   margin-top: 8px;
   text-align: center;
+}
+
+/* General images & diagrams in academic view */
+.academic-paper img {
+  max-width: 100%;
+  height: auto;
 }
 
 /* Diagrams */
@@ -213,6 +533,119 @@ body.theme-academic {
   margin: 24px 0;
   page-break-inside: avoid;
   break-inside: avoid;
+}
+
+.academic-paper .svg-diagram-wrapper svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* KaTeX Display Equations & Overflow Containment */
+.academic-paper .katex-display,
+.katex-display {
+  margin: 22px 0 !important;
+  padding: 6px 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+  box-sizing: border-box;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.academic-paper .katex-display::-webkit-scrollbar,
+.katex-display::-webkit-scrollbar {
+  height: 4px;
+}
+
+.academic-paper .katex-display::-webkit-scrollbar-thumb,
+.katex-display::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* KaTeX Precision Alignment & Extensible Arrow Normalization */
+.katex,
+.katex *,
+.katex *::before,
+.katex *::after {
+  box-sizing: content-box !important;
+}
+
+.katex .fbox,
+.katex .fcolorbox,
+.katex .angl {
+  box-sizing: border-box !important;
+}
+
+.katex {
+  line-height: 1.2 !important;
+  font-family: KaTeX_Main, 'Times New Roman', serif;
+}
+
+.katex * {
+  line-height: normal;
+}
+
+.katex .x-arrow {
+  text-align: center;
+  position: relative;
+}
+
+.katex .x-arrow .vlist-t {
+  border-collapse: collapse;
+}
+
+.katex .hide-tail {
+  position: relative !important;
+  overflow: hidden !important;
+  display: inline-block;
+}
+
+.katex svg {
+  display: block;
+  position: absolute;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100%;
+  height: inherit;
+}
+
+.sticky-note .katex-display,
+.academic-paper li .katex-display {
+  margin: 12px 0 !important;
+  padding: 4px 0;
+}
+
+/* KaTeX Display Row for Equations with Inline Rough Notation Answers */
+.academic-paper .katex-display-row,
+.katex-display-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0 !important;
+  text-align: center;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.katex-display-row .katex-disp-inline,
+.katex-display-row .katex-disp-inline .katex-display {
+  display: inline-block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.katex-display-row .rn-wrapper {
+  vertical-align: middle;
+}
+
+.academic-paper li .katex-display-row {
+  margin: 8px 0 !important;
 }
 
 /* Print Rules */
@@ -233,7 +666,33 @@ body.theme-academic {
     display: none !important;
   }
 
-  .sticky-note, .board-ref, .mermaid-wrapper, .svg-diagram-wrapper, .katex-display {
+  .table-wrapper {
+    overflow: visible !important;
+    max-width: 100% !important;
+    margin: 16px 0 !important;
+  }
+
+  .academic-paper table {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: 13px !important;
+  }
+
+  .academic-paper th {
+    font-size: 13.5px !important;
+    padding: 0.4em 0.5em !important;
+  }
+
+  .academic-paper td {
+    padding: 0.4em 0.5em !important;
+  }
+
+  .academic-paper table td .katex {
+    white-space: nowrap !important;
+    font-size: 0.9em !important;
+  }
+
+  .sticky-note, .board-ref, .mermaid-wrapper, .svg-diagram-wrapper, .katex-display, .rn-wrapper, .table-wrapper, tr {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }

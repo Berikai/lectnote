@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LectNote Studio - STEM Lecture Notes</title>
+  <title>LectNote Studio - Modern STEM Lecture Notes</title>
 
   <!-- Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Fira+Code:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Fira+Code:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
   <!-- KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
@@ -28,54 +28,103 @@
   <link rel="stylesheet" href="/styles/main.css">
   <link id="theme-stylesheet" rel="stylesheet" href="/styles/theme-notebook.css">
 </head>
-<body>
+<body class="theme-notebook">
 
   <!-- Top Studio Navigation Bar -->
   <header class="studio-header">
     <div class="header-left">
-      <div class="brand">
-        <span class="brand-icon">🖋️</span>
-        <span>LectNote</span>
+      <div class="brand" title="LectNote Studio">
+        <div class="brand-badge">
+          <svg class="ui-icon brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+            <path d="M2 2l7.586 7.586"></path>
+            <circle cx="11" cy="11" r="2"></circle>
+          </svg>
+        </div>
+        <div class="brand-title-wrap">
+          <span class="brand-name">LectNote</span>
+          <span class="brand-tag">STUDIO</span>
+        </div>
       </div>
 
+      <div class="workspace-divider"></div>
+
       <div class="workspace-select-group">
-        <select id="course-select" class="select-control" title="Select Course">
-          <option value="">Loading courses...</option>
-        </select>
-        <select id="lecture-select" class="select-control" title="Select Lecture">
-          <option value="">Loading lectures...</option>
-        </select>
-        <button id="btn-new-lecture" class="btn btn-ghost" title="Create New Lecture">+ New</button>
+        <div class="custom-select-wrapper">
+          <select id="course-select" class="select-control" title="Select Course">
+            <option value="">Loading courses...</option>
+          </select>
+          <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+
+        <span class="breadcrumb-separator">/</span>
+
+        <div class="custom-select-wrapper">
+          <select id="lecture-select" class="select-control" title="Select Lecture">
+            <option value="">Loading lectures...</option>
+          </select>
+          <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+
+        <button id="btn-new-lecture" class="btn btn-ghost btn-sm" title="Create New Lecture">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>New</span>
+        </button>
       </div>
     </div>
 
     <div class="header-center">
-      <div class="view-segmented-control">
-        <button class="view-segmented-btn active" data-view="split">Split</button>
-        <button class="view-segmented-btn" data-view="editor">Editor</button>
-        <button class="view-segmented-btn" data-view="preview">Preview</button>
+      <div class="view-segmented-control" role="tablist" aria-label="Layout View Modes">
+        <button class="view-segmented-btn active" data-view="split" title="Split Screen Mode">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+          <span>Split</span>
+        </button>
+        <button class="view-segmented-btn" data-view="editor" title="Editor Only">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          <span>Editor</span>
+        </button>
+        <button class="view-segmented-btn" data-view="preview" title="Preview Only">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Preview</span>
+        </button>
       </div>
 
-      <button id="btn-theme-toggle" class="btn btn-theme-toggle" title="Toggle between Ruled Notebook and Academic View">
-        📓 Ruled Notebook
+      <button id="btn-theme-toggle" class="btn btn-theme-toggle" title="Switch between Ruled Notebook and Academic Publication theme">
+        <span class="theme-icon-slot">
+          <svg class="ui-icon theme-icon-notebook" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </span>
+        <span class="theme-label-text">Ruled Notebook</span>
+        <span class="theme-switch-indicator"></span>
       </button>
     </div>
 
     <div class="header-right">
-      <button id="btn-open-ingestion" class="btn btn-secondary" title="Import whiteboard photos or configure AI transcription">
-        📥 Ingest / Transcribe
+      <button id="btn-open-ingestion" class="btn btn-secondary" title="Configure AI transcription or import whiteboard photos">
+        <svg class="ui-icon icon-sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+        <span>Ingest</span>
       </button>
+
       <button id="btn-toggle-drawer" class="btn btn-secondary" title="Open Whiteboard Photo Drawer">
-        📷 Board Photos (<span id="photo-count-badge">0</span>)
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Photos</span>
+        <span id="photo-count-badge" class="nav-count-badge">0</span>
       </button>
-      <button id="btn-save" class="btn btn-secondary" title="Save notes (Ctrl+S / Cmd+S)">
-        💾 Save
+
+      <button id="btn-save" class="btn btn-secondary" title="Save notes (⌘S / Ctrl+S)">
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span>Save</span>
+        <kbd class="kbd-hint">⌘S</kbd>
       </button>
-      <button id="btn-print-view" class="btn btn-secondary" title="Open standalone printable view (instant Ctrl+P)">
-        📄 Print View
+
+      <button id="btn-print-view" class="btn btn-secondary" title="Open standalone printable document in new tab">
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span>Print</span>
       </button>
-      <button id="btn-export-pdf" class="btn btn-primary" title="Export to Vector PDF via Headless Chrome">
-        🖨️ Export PDF
+
+      <button id="btn-export-pdf" class="btn btn-primary btn-sharp" title="Export high-res vector PDF via Headless Chrome">
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Export PDF</span>
       </button>
     </div>
   </header>
@@ -86,47 +135,75 @@
     <!-- Left Pane: Editor -->
     <section class="pane-editor" id="pane-editor">
       <div class="editor-toolbar">
-        <button class="tool-btn" data-action="highlight" title="Highlight (==text==)">
-          <span style="background:#fef08a;color:#000;padding:0 3px;border-radius:2px;">==</span> HL
-        </button>
-        <button class="tool-btn" data-action="circle" title="Circle formula ([f]{.circle})">
-          ⭕ Circle
-        </button>
-        <button class="tool-btn" data-action="box" title="Box definition ([def]{.box})">
-          🔲 Box
-        </button>
-        <button class="tool-btn" data-action="underline" title="Underline warning ([warning]{.underline})">
-          <u>U</u> Line
-        </button>
+        <div class="toolbar-group">
+          <button class="tool-btn" data-action="highlight" title="Rough Notation: Highlight (==text==)">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h3l6-6"/><path d="m22 7-4.5-4.5a2.1 2.1 0 0 0-3 0L3 14l7 7L21.5 9.5a2.1 2.1 0 0 0 0-3Z"/><line x1="2" y1="22" x2="22" y2="22" stroke="#facc15" stroke-width="3"/></svg>
+            <span class="tool-label">HL</span>
+          </button>
+          <button class="tool-btn" data-action="circle" title="Rough Notation: Circle formula ([term]{.circle})">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="8"/></svg>
+            <span class="tool-label">Circle</span>
+          </button>
+          <button class="tool-btn" data-action="box" title="Rough Notation: Box definition ([eq]{.box})">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/></svg>
+            <span class="tool-label">Box</span>
+          </button>
+          <button class="tool-btn" data-action="underline" title="Rough Notation: Underline point ([warning]{.underline})">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4v7a6 6 0 0 0 12 0V4"/><line x1="4" y1="20" x2="20" y2="20"/></svg>
+            <span class="tool-label">Line</span>
+          </button>
+        </div>
+
         <div class="tool-separator"></div>
-        <button class="tool-btn" data-action="math-inline" title="Inline Math ($...$)">
-          $x$
-        </button>
-        <button class="tool-btn" data-action="math-block" title="Display Math ($$...$$)">
-          $$ \sum $$
-        </button>
-        <button class="tool-btn" data-action="sticky" title="Professor Sticky Note Callout">
-          📌 Sticky
-        </button>
+
+        <div class="toolbar-group">
+          <button class="tool-btn" data-action="math-inline" title="Inline LaTeX Math ($...$)">
+            <span class="tool-math-symbol">$x$</span>
+            <span class="tool-label">Inline</span>
+          </button>
+          <button class="tool-btn" data-action="math-block" title="Display LaTeX Math ($$...$$)">
+            <span class="tool-math-symbol">$$\sum$$</span>
+            <span class="tool-label">Block</span>
+          </button>
+          <button class="tool-btn" data-action="sticky" title="Professor Sticky Callout (> [!note])">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"/><path d="M15 3v5h6"/></svg>
+            <span class="tool-label">Sticky</span>
+          </button>
+        </div>
+
         <div class="tool-separator"></div>
-        <button class="tool-btn" data-action="mermaid" title="Insert Mermaid Diagram">
-          📊 Mermaid
-        </button>
-        <button class="tool-btn" data-action="svg" title="Insert Vector SVG Diagram">
-          📐 SVG
-        </button>
-        <button class="tool-btn" data-action="board-ref" title="Insert Whiteboard Reference Tag">
-          📷 Board Ref
-        </button>
+
+        <div class="toolbar-group">
+          <button class="tool-btn" data-action="mermaid" title="Insert Mermaid Diagram (```mermaid)">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="12" r="3"/><line x1="8.5" y1="7.5" x2="15.5" y2="10.5"/><line x1="8.5" y1="16.5" x2="15.5" y2="13.5"/></svg>
+            <span class="tool-label">Mermaid</span>
+          </button>
+          <button class="tool-btn" data-action="svg" title="Insert Vector SVG Block (```svg)">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <span class="tool-label">SVG</span>
+          </button>
+          <button class="tool-btn" data-action="board-ref" title="Insert Whiteboard Reference Tag (:::board-ref)">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span class="tool-label">Board Ref</span>
+          </button>
+        </div>
       </div>
 
       <div class="editor-wrapper">
-        <textarea id="markdown-input" spellcheck="false" placeholder="Type Markdown notes here..."></textarea>
+        <textarea id="markdown-input" spellcheck="false" placeholder="Write markdown notes with LaTeX ($...$), callouts, and rough notations..."></textarea>
       </div>
 
       <div class="editor-statusbar">
-        <span id="editor-stats">Lines: 0 | Words: 0</span>
-        <span id="save-status">All changes saved</span>
+        <div class="statusbar-left">
+          <span class="status-badge-mono" id="editor-stats">Ln 1, Col 1 · 0 lines · 0 words</span>
+          <span class="status-pill status-lang">Markdown + KaTeX</span>
+        </div>
+        <div class="statusbar-right">
+          <div class="save-status-indicator" id="save-status">
+            <span class="status-dot"></span>
+            <span class="status-text">All changes saved</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -135,8 +212,8 @@
       <div class="preview-scroll-container">
         <article id="preview-paper" class="notebook-paper">
           <div class="note-meta-header">
-            <span id="preview-course-tag" class="note-course-tag">MCE 306</span>
-            <span id="preview-lecture-tag" class="note-title-tag">Diffusion & Fick's Laws</span>
+            <div class="meta-tag-pill" id="preview-course-tag">MCE 306</div>
+            <div class="meta-title-text" id="preview-lecture-tag">Diffusion &amp; Fick's Laws</div>
           </div>
           <div id="preview-content" class="content-body">
             <!-- Rendered content injected here -->
@@ -148,13 +225,20 @@
     <!-- Slide-out Whiteboard Photo Drawer -->
     <aside class="photo-drawer" id="photo-drawer">
       <div class="photo-drawer-header">
-        <span>📷 Whiteboard Photos (<span id="drawer-photo-count">0</span>)</span>
-        <div style="display:flex;gap:6px;">
-          <label class="btn btn-primary btn-icon" style="cursor:pointer;" title="Upload photos">
-            + Upload
+        <div class="drawer-title-group">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Board Photos</span>
+          <span class="nav-count-badge" id="drawer-photo-count">0</span>
+        </div>
+        <div class="drawer-actions">
+          <label class="btn btn-primary btn-sm btn-upload-label" title="Upload photos from computer">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Upload</span>
             <input type="file" id="drawer-file-input" multiple accept="image/*" style="display:none;">
           </label>
-          <button id="btn-close-drawer" class="btn btn-ghost btn-icon">✕</button>
+          <button id="btn-close-drawer" class="btn btn-ghost btn-icon-only" title="Close drawer (Esc)">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
       </div>
       <div class="photo-drawer-content" id="photo-drawer-content">
@@ -168,29 +252,64 @@
   <div class="modal-overlay" id="modal-ingestion">
     <div class="modal-card">
       <div class="modal-header">
-        <span>📥 Ingestion & Board Photo Transcription</span>
-        <button class="btn btn-ghost btn-close-modal" data-modal="modal-ingestion">✕</button>
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+          </div>
+          <div>
+            <div class="modal-title">AI Lecture Ingestion &amp; Transcribe</div>
+            <div class="modal-subtitle">Convert whiteboard photos into structured notes with KaTeX &amp; Rough Notation</div>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-icon-only btn-close-modal" data-modal="modal-ingestion" title="Close">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
+
       <div class="modal-body">
         
         <div class="form-group">
-          <label class="form-label">Select Ingestion Mode / Provider</label>
+          <label class="form-label">Select Vision LLM Provider</label>
           <div class="provider-grid">
             <div class="provider-card selected" data-provider="gemini">
-              <div class="provider-title">🌟 Google Gemini</div>
-              <div class="provider-desc">Gemini 3.8 Flash (High-res batch multimodal)</div>
+              <div class="provider-card-header">
+                <div class="provider-icon-badge gemini-badge">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+                </div>
+                <div class="provider-title">Google Gemini</div>
+                <span class="provider-tag">Recommended</span>
+              </div>
+              <div class="provider-desc">Gemini 3.8 Flash · High-res multimodal visual reasoning</div>
             </div>
+
             <div class="provider-card" data-provider="deepseek">
-              <div class="provider-title">⚡ DeepSeek</div>
-              <div class="provider-desc">DeepSeek v4.1 Flash (Visual reasoning)</div>
+              <div class="provider-card-header">
+                <div class="provider-icon-badge deepseek-badge">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </div>
+                <div class="provider-title">DeepSeek</div>
+              </div>
+              <div class="provider-desc">DeepSeek v4.1 Flash · High-precision math &amp; code analysis</div>
             </div>
+
             <div class="provider-card" data-provider="openai">
-              <div class="provider-title">🔌 OpenAI Compatible</div>
-              <div class="provider-desc">Custom Base URL (vLLM / Ollama / OpenRouter)</div>
+              <div class="provider-card-header">
+                <div class="provider-icon-badge openai-badge">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                </div>
+                <div class="provider-title">OpenAI Compatible</div>
+              </div>
+              <div class="provider-desc">Custom Base URL · vLLM, Ollama, OpenRouter, or GPT-4o</div>
             </div>
+
             <div class="provider-card" data-provider="manual">
-              <div class="provider-title">📝 Manual Mode</div>
-              <div class="provider-desc">Skip AI; write markdown directly with photo refs</div>
+              <div class="provider-card-header">
+                <div class="provider-icon-badge manual-badge">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </div>
+                <div class="provider-title">Manual Mode</div>
+              </div>
+              <div class="provider-desc">Skip AI · Write notes directly and link uploaded photos</div>
             </div>
           </div>
         </div>
@@ -198,50 +317,85 @@
         <!-- Dynamic Credentials / Configuration -->
         <div id="provider-config-fields">
           <div class="form-group" id="field-base-url" style="display:none;">
-            <label class="form-label">Base URL</label>
+            <label class="form-label" for="input-base-url">API Base URL</label>
             <input type="text" id="input-base-url" class="form-input" placeholder="http://localhost:11434/v1 or https://openrouter.ai/api/v1">
           </div>
 
           <div class="form-group" id="field-api-key">
-            <label class="form-label">API Key</label>
-            <input type="password" id="input-api-key" class="form-input" placeholder="Enter API Key (saved locally in browser)">
+            <label class="form-label" for="input-api-key">API Key</label>
+            <input type="password" id="input-api-key" class="form-input" placeholder="Enter API Key (persisted locally in browser storage)">
           </div>
 
           <div class="form-group" id="field-model-name">
-            <label class="form-label">Model Name</label>
+            <label class="form-label" for="input-model-name">Model Name</label>
             <input type="text" id="input-model-name" class="form-input" value="gemini-3.8-flash">
           </div>
         </div>
 
+        <!-- Target Course & Lecture Cascading Selectors -->
         <div class="form-group">
-          <label class="form-label">Course & Lecture Context</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <input type="text" id="input-context-course" class="form-input" placeholder="Course Code (e.g. MCE 306, MATH 201)">
-            <input type="text" id="input-context-subject" class="form-input" placeholder="Subject (e.g. Materials Science, Linear Algebra)">
+          <label class="form-label" for="ingest-course-select">Target Course</label>
+          <select id="ingest-course-select" class="form-select">
+            <!-- Dynamically populated courses -->
+          </select>
+        </div>
+
+        <div class="form-group" id="wrap-ingest-new-course" style="display: none;">
+          <label class="form-label" for="input-ingest-new-course">New Course Code / Name</label>
+          <input type="text" id="input-ingest-new-course" class="form-input" placeholder="e.g. MCE 306 or CS 301">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ingest-lecture-select">Target Lecture</label>
+          <select id="ingest-lecture-select" class="form-select">
+            <!-- Dynamically populated lectures -->
+          </select>
+        </div>
+
+        <div id="wrap-ingest-new-lecture" style="display: none; display: flex; flex-direction: column; gap: 10px;">
+          <div class="form-group">
+            <label class="form-label" for="input-ingest-new-lecture-title">New Lecture Title / Topic</label>
+            <input type="text" id="input-ingest-new-lecture-title" class="form-input" placeholder="e.g. Singularity Functions &amp; Beam Deflection">
           </div>
+          <div class="form-group">
+            <div class="form-label-row" style="display: flex; justify-content: space-between; align-items: center;">
+              <label class="form-label" for="input-ingest-new-lecture-slug">New Lecture Identifier / Slug</label>
+              <span class="field-hint" style="font-size: 11px; color: var(--text-muted);">Auto-generated</span>
+            </div>
+            <input type="text" id="input-ingest-new-lecture-slug" class="form-input" placeholder="e.g. lecture-05-beam-deflection">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="input-context-subject">Subject Context (Optional)</label>
+          <input type="text" id="input-context-subject" class="form-input" placeholder="Subject (e.g. Mechanical Engineering, Algorithms)">
         </div>
 
         <!-- Photo Upload Dropzone -->
         <div class="form-group">
           <label class="form-label">Whiteboard Photos for this Lecture</label>
           <div class="dropzone" id="ingest-dropzone">
-            <div class="dropzone-icon">📷</div>
-            <div class="dropzone-text">Click to choose or drag & drop lecture photos here</div>
-            <div class="dropzone-hint">Supports high-res JPG, PNG, WEBP</div>
+            <div class="dropzone-icon-wrap">
+              <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <div class="dropzone-text">Click or drag &amp; drop whiteboard photos here</div>
+            <div class="dropzone-hint">Supports high-res PNG, JPG, JPEG, WEBP</div>
             <input type="file" id="ingest-file-input" multiple accept="image/*" style="display:none;">
           </div>
-          <div id="ingest-staged-photos" style="font-size:12px;color:#94a3b8;margin-top:6px;"></div>
+          <div id="ingest-staged-photos" class="staged-photos-banner"></div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Custom TA Instructions (Optional)</label>
-          <input type="text" id="input-custom-prompt" class="form-input" placeholder="e.g. 'Focus heavily on derivation steps 3 and 4'">
+          <label class="form-label" for="input-custom-prompt">Custom Instructions (Optional)</label>
+          <input type="text" id="input-custom-prompt" class="form-input" placeholder="e.g. Focus heavily on step-by-step derivation for exam preparation">
         </div>
 
       </div>
+
       <div class="modal-footer">
         <button class="btn btn-secondary btn-close-modal" data-modal="modal-ingestion">Cancel</button>
-        <button id="btn-run-ingest" class="btn btn-primary">
+        <button id="btn-run-ingest" class="btn btn-primary btn-sharp">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           <span class="btn-text">Start Ingestion</span>
         </button>
       </div>
@@ -250,28 +404,52 @@
 
   <!-- New Lecture Modal -->
   <div class="modal-overlay" id="modal-new-lecture">
-    <div class="modal-card" style="max-width:440px;">
+    <div class="modal-card modal-card-sm">
       <div class="modal-header">
-        <span>+ Create New Lecture</span>
-        <button class="btn btn-ghost btn-close-modal" data-modal="modal-new-lecture">✕</button>
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+          <div>
+            <div class="modal-title">Create New Lecture</div>
+            <div class="modal-subtitle">Add a new lecture workspace under any course</div>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-icon-only btn-close-modal" data-modal="modal-new-lecture" title="Close">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
+
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Course Code / Name</label>
+          <label class="form-label" for="select-new-course">Target Course</label>
+          <select id="select-new-course" class="form-select">
+            <!-- Dynamically populated courses -->
+          </select>
+        </div>
+
+        <div class="form-group" id="wrap-new-course-input" style="display: none;">
+          <label class="form-label" for="input-new-course">New Course Code / Name</label>
           <input type="text" id="input-new-course" class="form-input" placeholder="e.g. PHYS 102 or CS 301">
         </div>
+
         <div class="form-group">
-          <label class="form-label">Lecture Slug / Identifier</label>
-          <input type="text" id="input-new-lecture" class="form-input" placeholder="e.g. lecture-05-electromagnetism">
+          <label class="form-label" for="input-new-title">Lecture Topic / Title</label>
+          <input type="text" id="input-new-title" class="form-input" placeholder="e.g. Gauss's Law &amp; Flux Integrals">
         </div>
+
         <div class="form-group">
-          <label class="form-label">Lecture Topic / Title</label>
-          <input type="text" id="input-new-title" class="form-input" placeholder="e.g. Gauss's Law & Flux Integrals">
+          <div class="form-label-row" style="display: flex; justify-content: space-between; align-items: center;">
+            <label class="form-label" for="input-new-lecture">Lecture Identifier / Slug</label>
+            <span class="field-hint" style="font-size: 11px; color: var(--text-muted);">Auto-generated</span>
+          </div>
+          <input type="text" id="input-new-lecture" class="form-input" placeholder="e.g. lecture-05-gauss-law">
         </div>
       </div>
+
       <div class="modal-footer">
         <button class="btn btn-secondary btn-close-modal" data-modal="modal-new-lecture">Cancel</button>
-        <button id="btn-create-lecture" class="btn btn-primary">Create Lecture</button>
+        <button id="btn-create-lecture" class="btn btn-primary btn-sharp">Create Lecture</button>
       </div>
     </div>
   </div>
@@ -279,12 +457,22 @@
   <!-- Lightbox Modal for Photo Zoom & Inspect -->
   <div class="lightbox-modal" id="lightbox-modal">
     <div class="lightbox-toolbar">
-      <span id="lightbox-title">Whiteboard Reference</span>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button id="lightbox-zoom-out" class="btn btn-ghost btn-icon">🔍-</button>
-        <button id="lightbox-zoom-reset" class="btn btn-ghost btn-icon">100%</button>
-        <button id="lightbox-zoom-in" class="btn btn-ghost btn-icon">🔍+</button>
-        <button id="lightbox-close" class="btn btn-ghost btn-icon">✕</button>
+      <div class="lightbox-title-group">
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span id="lightbox-title">Whiteboard Reference</span>
+      </div>
+      <div class="lightbox-controls">
+        <button id="lightbox-zoom-out" class="btn btn-ghost btn-icon-only" title="Zoom Out (-)">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+        <button id="lightbox-zoom-reset" class="btn btn-ghost btn-sm" title="Reset Zoom to 100%">100%</button>
+        <button id="lightbox-zoom-in" class="btn btn-ghost btn-icon-only" title="Zoom In (+)">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+        <div class="tool-separator"></div>
+        <button id="lightbox-close" class="btn btn-ghost btn-icon-only" title="Close Lightbox (Esc)">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
     </div>
     <div class="lightbox-viewport" id="lightbox-viewport">
@@ -303,4 +491,3 @@
   <script src="/scripts/app.js"></script>
 </body>
 </html>
-

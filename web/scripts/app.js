@@ -89,10 +89,31 @@ window.LectNoteApp = (function() {
       window.LectNoteIngestion.openModal();
     });
 
-    // New Lecture button
-    btnNewLecture.addEventListener('click', () => {
-      document.getElementById('modal-new-lecture').classList.add('active');
-    });
+    // New Lecture modal handling
+    btnNewLecture.addEventListener('click', openNewLectureModal);
+
+    const selectNewCourse = document.getElementById('select-new-course');
+    const wrapNewCourse = document.getElementById('wrap-new-course-input');
+    const inputNewTitle = document.getElementById('input-new-title');
+
+    if (selectNewCourse) {
+      selectNewCourse.addEventListener('change', () => {
+        if (selectNewCourse.value === '__new__') {
+          wrapNewCourse.style.display = 'block';
+          const inp = document.getElementById('input-new-course');
+          if (inp) inp.focus();
+        } else {
+          wrapNewCourse.style.display = 'none';
+        }
+        updateSuggestedSlug();
+      });
+    }
+
+    if (inputNewTitle) {
+      inputNewTitle.addEventListener('input', () => {
+        updateSuggestedSlug();
+      });
+    }
 
     // Create lecture confirm
     document.getElementById('btn-create-lecture').addEventListener('click', createNewLecture);
@@ -112,18 +133,29 @@ window.LectNoteApp = (function() {
     currentTheme = theme;
     localStorage.setItem('lectnote_theme', theme);
 
+    const iconSlot = themeToggleBtn.querySelector('.theme-icon-slot');
+    const labelText = themeToggleBtn.querySelector('.theme-label-text');
+
     if (theme === 'academic') {
       document.body.classList.remove('theme-notebook');
       document.body.classList.add('theme-academic');
       themeStylesheet.href = '/styles/theme-academic.css';
       previewPaper.className = 'academic-paper';
-      themeToggleBtn.textContent = '🎓 Academic View';
+      if (labelText) labelText.textContent = 'Academic View';
+      else themeToggleBtn.textContent = 'Academic View';
+      if (iconSlot) {
+        iconSlot.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>`;
+      }
     } else {
       document.body.classList.remove('theme-academic');
       document.body.classList.add('theme-notebook');
       themeStylesheet.href = '/styles/theme-notebook.css';
       previewPaper.className = 'notebook-paper';
-      themeToggleBtn.textContent = '📓 Ruled Notebook';
+      if (labelText) labelText.textContent = 'Ruled Notebook';
+      else themeToggleBtn.textContent = 'Ruled Notebook';
+      if (iconSlot) {
+        iconSlot.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`;
+      }
     }
 
     if (reRender && window.LectNotePreview) {
@@ -150,7 +182,7 @@ window.LectNoteApp = (function() {
     }
   }
 
-  async function loadCourses() {
+  async function loadCourses(targetCourse = null, targetLecture = null) {
     try {
       const res = await fetch('/api/lectures');
       const data = await res.json();
@@ -162,15 +194,27 @@ window.LectNoteApp = (function() {
         return;
       }
 
-      courseSelect.innerHTML = coursesData.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
+      courseSelect.innerHTML = coursesData.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name || c.id)}</option>`).join('');
 
-      // Select first course & lecture
-      currentCourse = coursesData[0].id;
+      const resolvedCourse = (targetCourse && coursesData.some(c => c.id === targetCourse))
+        ? targetCourse
+        : (currentCourse && coursesData.some(c => c.id === currentCourse))
+        ? currentCourse
+        : coursesData[0].id;
+
+      currentCourse = resolvedCourse;
       courseSelect.value = currentCourse;
       updateLectureDropdown();
 
-      if (coursesData[0].lectures && coursesData[0].lectures.length > 0) {
-        currentLecture = coursesData[0].lectures[0].id;
+      const courseObj = coursesData.find(c => c.id === currentCourse);
+      const resolvedLecture = (targetLecture && courseObj && courseObj.lectures && courseObj.lectures.some(l => l.id === targetLecture))
+        ? targetLecture
+        : (currentLecture && courseObj && courseObj.lectures && courseObj.lectures.some(l => l.id === currentLecture))
+        ? currentLecture
+        : (courseObj && courseObj.lectures && courseObj.lectures[0] ? courseObj.lectures[0].id : null);
+
+      if (resolvedLecture) {
+        currentLecture = resolvedLecture;
         lectureSelect.value = currentLecture;
         await loadLecture(currentCourse, currentLecture);
       }
@@ -259,8 +303,8 @@ window.LectNoteApp = (function() {
     // Auto-save before exporting
     await saveCurrentLecture();
 
-    const originalText = btnExportPdf.textContent;
-    btnExportPdf.innerHTML = `<span class="spinner"></span> Generating PDF...`;
+    const originalHtml = btnExportPdf.innerHTML;
+    btnExportPdf.innerHTML = `<span class="spinner"></span> <span>Exporting...</span>`;
     btnExportPdf.disabled = true;
     showToast('Rendering vector PDF via Headless Chrome...', 'info');
 
@@ -293,19 +337,114 @@ window.LectNoteApp = (function() {
       showToast(`${err.message}. Opening printable view instead!`, 'info');
       openPrintView();
     } finally {
-      btnExportPdf.textContent = originalText;
+      btnExportPdf.innerHTML = originalHtml;
       btnExportPdf.disabled = false;
     }
   }
 
 
+  function getNextLectureNumber(courseId) {
+    const course = coursesData.find(c => c.id === courseId);
+    if (!course || !course.lectures || course.lectures.length === 0) return 1;
+    let maxNum = 0;
+    course.lectures.forEach(l => {
+      const m = l.id.match(/lecture-?(\d+)/i);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    });
+    return maxNum + 1;
+  }
+
+  function updateSuggestedSlug() {
+    const selectCourse = document.getElementById('select-new-course');
+    const inputTitle = document.getElementById('input-new-title');
+    const inputSlug = document.getElementById('input-new-lecture');
+    if (!selectCourse || !inputTitle || !inputSlug) return;
+
+    const courseId = selectCourse.value;
+    const nextNum = courseId === '__new__' ? 1 : getNextLectureNumber(courseId);
+    const padNum = String(nextNum).padStart(2, '0');
+    const title = inputTitle.value.trim();
+
+    if (title) {
+      const cleanSlug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 40);
+      inputSlug.value = cleanSlug ? `lecture-${padNum}-${cleanSlug}` : `lecture-${padNum}`;
+    } else {
+      inputSlug.value = `lecture-${padNum}`;
+    }
+  }
+
+  function openNewLectureModal() {
+    const modal = document.getElementById('modal-new-lecture');
+    const selectCourse = document.getElementById('select-new-course');
+    const wrapNewCourse = document.getElementById('wrap-new-course-input');
+    const inputNewCourse = document.getElementById('input-new-course');
+    const inputTitle = document.getElementById('input-new-title');
+
+    if (!modal || !selectCourse) return;
+
+    let options = coursesData.map(c => 
+      `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name || c.id)}</option>`
+    ).join('');
+    options += `<option value="__new__">+ Create New Course...</option>`;
+    selectCourse.innerHTML = options;
+
+    if (currentCourse && coursesData.some(c => c.id === currentCourse)) {
+      selectCourse.value = currentCourse;
+      if (wrapNewCourse) wrapNewCourse.style.display = 'none';
+    } else if (coursesData.length > 0) {
+      selectCourse.value = coursesData[0].id;
+      if (wrapNewCourse) wrapNewCourse.style.display = 'none';
+    } else {
+      selectCourse.value = '__new__';
+      if (wrapNewCourse) wrapNewCourse.style.display = 'block';
+    }
+
+    if (inputNewCourse) inputNewCourse.value = '';
+    if (inputTitle) inputTitle.value = '';
+
+    updateSuggestedSlug();
+    modal.classList.add('active');
+
+    setTimeout(() => {
+      if (selectCourse.value === '__new__' && inputNewCourse) {
+        inputNewCourse.focus();
+      } else if (inputTitle) {
+        inputTitle.focus();
+      }
+    }, 80);
+  }
+
+  async function switchToLecture(courseId, lectureId) {
+    currentCourse = courseId;
+    courseSelect.value = courseId;
+    updateLectureDropdown();
+    currentLecture = lectureId;
+    lectureSelect.value = lectureId;
+    await loadLecture(currentCourse, currentLecture);
+  }
+
   async function createNewLecture() {
-    const courseInput = document.getElementById('input-new-course').value.trim();
+    const selectCourse = document.getElementById('select-new-course');
+    const isNewCourse = selectCourse && selectCourse.value === '__new__';
+    const courseInput = isNewCourse 
+      ? document.getElementById('input-new-course').value.trim()
+      : (selectCourse ? selectCourse.value : '');
     const lectureInput = document.getElementById('input-new-lecture').value.trim();
     const titleInput = document.getElementById('input-new-title').value.trim();
 
-    if (!courseInput || !lectureInput) {
-      showToast('Course and lecture identifier are required', 'error');
+    if (!courseInput) {
+      showToast('Course name or selection is required', 'error');
+      return;
+    }
+    if (!lectureInput) {
+      showToast('Lecture identifier is required', 'error');
       return;
     }
 
@@ -323,13 +462,7 @@ window.LectNoteApp = (function() {
       if (data.success) {
         document.getElementById('modal-new-lecture').classList.remove('active');
         showToast('Lecture created successfully', 'success');
-        await loadCourses();
-        courseSelect.value = data.course;
-        currentCourse = data.course;
-        updateLectureDropdown();
-        lectureSelect.value = data.lecture;
-        currentLecture = data.lecture;
-        await loadLecture(currentCourse, currentLecture);
+        await loadCourses(data.course, data.lecture);
       } else {
         throw new Error(data.error);
       }
@@ -370,8 +503,13 @@ window.LectNoteApp = (function() {
 
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
-    toast.innerHTML = `<span>${icon}</span><span>${escapeHtml(message)}</span>`;
+    const iconSvg = type === 'success'
+      ? `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`
+      : type === 'error'
+      ? `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
+      : `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+
+    toast.innerHTML = `${iconSvg}<span>${escapeHtml(message)}</span>`;
     container.appendChild(toast);
 
     setTimeout(() => {
@@ -395,6 +533,9 @@ window.LectNoteApp = (function() {
     saveCurrentLecture,
     reloadCurrentLecture,
     getCurrentWorkspace,
+    getCourses: () => coursesData,
+    switchToLecture,
+    loadCourses,
     showToast
   };
 })();

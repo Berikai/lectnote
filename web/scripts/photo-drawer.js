@@ -120,8 +120,9 @@ window.LectNotePhotoDrawer = (function() {
     if (count === 0) {
       drawerContent.innerHTML = `
         <div class="photo-empty-state">
-          <p>No whiteboard photos uploaded for this lecture yet.</p>
-          <p style="margin-top:8px;">Click <strong>+ Upload</strong> above or drop images into the editor to add references.</p>
+          <svg class="photo-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <p style="font-weight:600;color:var(--text-primary);">No whiteboard photos yet</p>
+          <p style="font-size:11.5px;max-width:240px;line-height:1.4;">Click <strong>Upload</strong> above to stage photos for AI transcription and inline notes.</p>
         </div>
       `;
       return;
@@ -135,8 +136,10 @@ window.LectNotePhotoDrawer = (function() {
         <div class="photo-card" data-photo="${escapeHtml(photo)}">
           <img src="${url}" alt="${escapeHtml(photo)}" loading="lazy" />
           <div class="photo-card-info">
-            <span style="font-family:'Fira Code',monospace;">${escapeHtml(photo)}</span>
-            <button class="btn btn-ghost btn-icon btn-copy-ref" data-photo="${escapeHtml(photo)}" title="Copy board reference code">📋</button>
+            <span style="font-family:var(--font-mono);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:270px;">${escapeHtml(photo)}</span>
+            <button class="btn btn-ghost btn-icon-only btn-copy-ref" data-photo="${escapeHtml(photo)}" title="Copy board reference tag">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
           </div>
         </div>
       `;
