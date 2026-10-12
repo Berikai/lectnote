@@ -102,6 +102,36 @@ app.get('/api/lectures', (req, res) => {
   }
 });
 
+function resolveCourseDir(courseInput) {
+  if (!courseInput) return '';
+  const safeInput = courseInput.replace(/[^a-zA-Z0-9_-]/g, '_');
+  if (!fs.existsSync(LECTURES_DIR)) return safeInput;
+
+  const existingCourses = fs.readdirSync(LECTURES_DIR, { withFileTypes: true })
+    .filter(d => d.isDirectory() && !d.name.startsWith('.'))
+    .map(d => d.name);
+
+  // 1. Exact match
+  if (existingCourses.includes(safeInput)) return safeInput;
+
+  // 2. Case-insensitive exact match
+  const lowerInput = safeInput.toLowerCase();
+  const ciMatch = existingCourses.find(c => c.toLowerCase() === lowerInput);
+  if (ciMatch) return ciMatch;
+
+  // 3. Normalization match: match by stripped alphanumeric tokens (e.g. "MCE 306" matches "MCE_306_Fundamentals_of_Machine_Design")
+  const inputAlpha = safeInput.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  if (inputAlpha.length >= 4) {
+    const tokenMatches = existingCourses.filter(c => {
+      const cAlpha = c.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      return cAlpha.startsWith(inputAlpha) || cAlpha.includes(inputAlpha);
+    });
+    if (tokenMatches.length === 1) return tokenMatches[0];
+  }
+
+  return safeInput;
+}
+
 /**
  * 2. Create new course / lecture workspace
  */
@@ -112,7 +142,7 @@ app.post('/api/lectures', (req, res) => {
       return res.status(400).json({ error: 'course and lecture are required' });
     }
 
-    const safeCourse = course.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeCourse = resolveCourseDir(course);
     const safeLecture = lecture.replace(/[^a-zA-Z0-9_-]/g, '_');
     const dir = path.join(LECTURES_DIR, safeCourse, safeLecture);
     const photosDir = path.join(dir, 'photos');
@@ -121,7 +151,8 @@ app.post('/api/lectures', (req, res) => {
 
     const mdPath = path.join(dir, 'notes.md');
     if (!fs.existsSync(mdPath)) {
-      const starterMd = `# ${safeCourse}: ${title}\n\n> [!note] Lecture Overview\n> Notes for ${safeCourse} (${subject}).\n\n## 1. Key Principles\nWrite your concepts and derivations here.\n\n[Fundamental Equation]{.box}\n\n$$E = mc^2$$\n`;
+      const displayCourse = safeCourse.replace(/[-_]/g, ' ');
+      const starterMd = `# ${displayCourse}: ${title}\n\n> [!note] Lecture Overview\n> Notes for ${displayCourse} (${subject}).\n\n## 1. Key Principles\nWrite your concepts and derivations here.\n\n[Fundamental Equation]{.box}\n\n$$E = mc^2$$\n`;
       fs.writeFileSync(mdPath, starterMd, 'utf8');
     }
 
@@ -201,7 +232,19 @@ app.post('/api/lectures/:course/:lecture/upload', (req, res) => {
  */
 app.get('/api/lectures/:course/:lecture/photos/:photo', (req, res) => {
   const { course, lecture, photo } = req.params;
-  const filePath = path.join(LECTURES_DIR, course, lecture, 'photos', photo);
+  let filePath = path.join(LECTURES_DIR, course, lecture, 'photos', photo);
+  if (!fs.existsSync(filePath)) {
+    // Try alternate extensions (.png, .jpg, .jpeg, .webp, .svg)
+    const baseName = photo.replace(/\.[^.]+$/, '');
+    const altExts = ['.png', '.jpg', '.jpeg', '.webp', '.svg'];
+    for (const ext of altExts) {
+      const candidate = path.join(LECTURES_DIR, course, lecture, 'photos', baseName + ext);
+      if (fs.existsSync(candidate)) {
+        filePath = candidate;
+        break;
+      }
+    }
+  }
   if (!fs.existsSync(filePath)) {
     return res.status(404).send('Photo not found');
   }
@@ -305,9 +348,11 @@ app.post('/api/lectures/:course/:lecture/export-pdf', async (req, res) => {
       theme
     });
 
+    const finalBuffer = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${course}_${lecture}.pdf"`);
-    res.send(pdfBuffer);
+    res.setHeader('Content-Length', finalBuffer.length);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(course)}_${encodeURIComponent(lecture)}.pdf"`);
+    res.end(finalBuffer);
   } catch (err) {
     console.error('PDF Export error:', err);
     res.status(500).json({ error: err.message });
@@ -361,59 +406,161 @@ function generateStandaloneHtml({ title, renderedBody, theme, course, lecture })
   <script>
     window.__LECTNOTE_READY__ = false;
 
+    function fitDisplayMath(container) {
+      if (!container) return;
+      const displays = container.querySelectorAll('.katex-display');
+      displays.forEach(disp => {
+        disp.style.fontSize = '';
+        const katexEl = disp.querySelector('.katex');
+        if (!katexEl) return;
+
+        const parent = disp.closest('.rn-block-circle, .rn-block-box, li, blockquote, .content-body') || disp.parentElement;
+        const parentWidth = parent ? parent.clientWidth : disp.clientWidth;
+        if (parentWidth <= 0) return;
+
+        const naturalWidth = katexEl.scrollWidth;
+        const targetWidth = parentWidth - 24;
+        if (naturalWidth > targetWidth && targetWidth > 0) {
+          const ratio = Math.max(0.70, targetWidth / naturalWidth);
+          disp.style.fontSize = (ratio * 100).toFixed(1) + '%';
+        }
+      });
+    }
+
+    function fitTables(container) {
+      if (!container) return;
+      const wrappers = container.querySelectorAll('.table-wrapper');
+      wrappers.forEach(wrapper => {
+        const table = wrapper.querySelector('table');
+        if (!table) return;
+        table.style.fontSize = '';
+        const containerWidth = wrapper.clientWidth;
+        if (containerWidth <= 0) return;
+        const tableWidth = table.scrollWidth;
+        if (tableWidth > containerWidth) {
+          const ratio = Math.max(0.68, (containerWidth - 4) / tableWidth);
+          const baseSize = parseFloat(window.getComputedStyle(table).fontSize) || 15;
+          table.style.fontSize = (baseSize * ratio).toFixed(1) + 'px';
+          if (table.scrollWidth > containerWidth) {
+            const secondRatio = (containerWidth - 2) / table.scrollWidth;
+            const curr = parseFloat(window.getComputedStyle(table).fontSize) || (baseSize * ratio);
+            table.style.fontSize = Math.max(10, curr * secondRatio).toFixed(1) + 'px';
+          }
+        }
+      });
+    }
+
     async function initRender() {
       try {
-        // 1. Wait for fonts to be ready
-        await document.fonts.ready;
+        // 1. Wait for scripts & fonts to be ready
+        let attempts = 0;
+        while ((!window.renderMathInElement || !window.mermaid || !window.RoughNotation) && attempts < 30) {
+          await new Promise(r => setTimeout(r, 50));
+          attempts++;
+        }
+        try {
+          await document.fonts.ready;
+        } catch (e) {}
+
+        const container = document.getElementById('render-content');
 
         // 2. Render KaTeX Math
-        if (window.renderMathInElement) {
-          renderMathInElement(document.getElementById('render-content'), {
-            delimiters: [
-              { left: '$$', right: '$$', display: true },
-              { left: '$', right: '$', display: false },
-              { left: '\\[', right: '\\]', display: true },
-              { left: '\\(', right: '\\)', display: false }
-            ],
-            throwOnError: false,
-            errorColor: '#cc0000',
-            strict: false
-          });
+        if (window.renderMathInElement && container) {
+          try {
+            renderMathInElement(container, {
+              delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false },
+                { left: '\\\\[', right: '\\\\]', display: true },
+                { left: '\\\\(', right: '\\\\)', display: false }
+              ],
+              throwOnError: false,
+              errorColor: '#cc0000',
+              strict: false
+            });
+            fitDisplayMath(container);
+            fitTables(container);
+          } catch (e) {
+            console.warn('KaTeX render error:', e);
+          }
         }
 
         // 3. Render Mermaid
         if (window.mermaid) {
-          mermaid.initialize({ startOnLoad: false, theme: '${isAcademic ? 'default' : 'neutral'}' });
-          await mermaid.run({ querySelector: '.mermaid' });
-        }
-
-        // 4. Force browser layout reflow
-        void document.body.offsetHeight;
-
-        // 5. Annotate with Rough Notation
-        if (window.RoughNotation) {
-          const elements = document.querySelectorAll('[data-rn]');
-          const group = [];
-          elements.forEach(el => {
-            const type = el.getAttribute('data-rn');
-            const color = el.getAttribute('data-color') || '#fef08a';
-            const isUnderline = type === 'underline';
-            const annotation = RoughNotation.annotate(el, {
-              type: type,
-              color: color,
-              padding: isBlock ? 8 : (type === 'circle' ? 6 : (isUnderline ? [0, 2, 2, 2] : 3)),
-              strokeWidth: isUnderline ? 2.5 : 2,
-              multiline: type === 'highlight',
-              iterations: 2
-            });
-            group.push(annotation);
-          });
-
-          if (group.length > 0) {
-            const annotationGroup = RoughNotation.annotationGroup(group);
-            annotationGroup.show();
+          try {
+            mermaid.initialize({ startOnLoad: false, theme: '${isAcademic ? 'default' : 'neutral'}' });
+            await mermaid.run({ querySelector: '.mermaid' });
+          } catch (e) {
+            console.warn('Mermaid render error:', e);
           }
         }
+
+        // 4. Wait for images to finish loading so layout heights are settled
+        const images = Array.from(document.querySelectorAll('img'));
+        if (images.length > 0) {
+          await Promise.all(images.map(img => {
+            if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
+            return new Promise(resolve => {
+              img.addEventListener('load', resolve, { once: true });
+              img.addEventListener('error', resolve, { once: true });
+              setTimeout(resolve, 800);
+            });
+          }));
+        }
+
+        // 5. Force browser layout reflow
+        void document.body.offsetHeight;
+
+        // 6. Annotate with Rough Notation
+        if (window.RoughNotation) {
+          try {
+            const elements = document.querySelectorAll('[data-rn]');
+            const group = [];
+            elements.forEach(el => {
+              const type = el.getAttribute('data-rn');
+              const color = el.getAttribute('data-color') || '#fef08a';
+              const isBlock = el.tagName === 'DIV' || el.classList.contains('rn-block-box') || el.classList.contains('rn-block-circle');
+              const isUnderline = type === 'underline';
+              const annotation = RoughNotation.annotate(el, {
+                type: type,
+                color: color,
+                padding: isBlock ? 8 : (type === 'circle' ? 6 : (isUnderline ? [0, 2, 2, 2] : 3)),
+                strokeWidth: isUnderline ? 2.5 : 2,
+                multiline: type === 'highlight',
+                iterations: 2,
+                animate: false
+              });
+              group.push(annotation);
+            });
+
+            if (group.length > 0) {
+              const annotationGroup = RoughNotation.annotationGroup(group);
+              annotationGroup.show();
+              window.__RN_GROUP__ = annotationGroup;
+            }
+          } catch (e) {
+            console.warn('RoughNotation error:', e);
+          }
+        }
+
+        window.addEventListener('resize', () => {
+          fitDisplayMath(container);
+          fitTables(container);
+          if (window.__RN_GROUP__) {
+            window.__RN_GROUP__.show();
+          }
+        });
+
+        // 7. Bind board photo inspection buttons
+        document.querySelectorAll('.btn-inspect-board, .board-ref-img-wrapper').forEach(btn => {
+          btn.onclick = (e) => {
+            e.preventDefault();
+            const photo = btn.getAttribute('data-photo');
+            if (photo) {
+              window.open('/api/lectures/' + encodeURIComponent('${course}') + '/' + encodeURIComponent('${lecture}') + '/photos/' + encodeURIComponent(photo), '_blank');
+            }
+          };
+        });
       } catch (e) {
         console.error('Render error:', e);
       } finally {
@@ -443,9 +590,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`LectNote Studio running at http://localhost:${PORT}`);
-});
+function startServer(port = PORT) {
+  return app.listen(port, () => {
+    console.log(`LectNote Studio running at http://localhost:${port}`);
+  });
+}
 
-module.exports = { app };
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = { app, startServer };
 

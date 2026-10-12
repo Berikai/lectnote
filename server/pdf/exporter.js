@@ -29,8 +29,11 @@ async function exportLectureToPdf(options = {}) {
 
     const page = await browser.newPage();
     
-    // Set viewport matching standard desktop rendering
-    await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 2 });
+    // Set viewport matching printable A4 page dimensions (794x1123 at 96 DPI)
+    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
+
+    // Emulate print media so all print styles, page widths, and fonts apply from the start
+    await page.emulateMediaType('print');
 
     // Navigate to printable view
     await page.goto(url, { waitUntil: 'networkidle0', timeout });
@@ -47,7 +50,7 @@ async function exportLectureToPdf(options = {}) {
     await new Promise(r => setTimeout(r, 600));
 
     // Generate vector PDF
-    const pdfBuffer = await page.pdf({
+    const pdfData = await page.pdf({
       format: 'A4',
       printBackground: true,
       preferCSSPageSize: true,
@@ -58,6 +61,8 @@ async function exportLectureToPdf(options = {}) {
         left: '12mm'
       }
     });
+
+    const pdfBuffer = Buffer.isBuffer(pdfData) ? pdfData : Buffer.from(pdfData);
 
     if (outputPath) {
       const dir = path.dirname(outputPath);

@@ -122,7 +122,7 @@ async function callGemini({ apiKey, model, systemPrompt, userPromptText, images 
           contents,
           generationConfig: {
             temperature: 0.2,
-            maxOutputTokens: 8192
+            maxOutputTokens: 16384
           }
         })
       });
@@ -139,6 +139,10 @@ async function callGemini({ apiKey, model, systemPrompt, userPromptText, images 
       }
 
       const data = await response.json();
+      const finishReason = data?.candidates?.[0]?.finishReason;
+      if (finishReason === 'MAX_TOKENS') {
+        console.warn('Gemini transcription output reached MAX_TOKENS limit.');
+      }
       const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
       return cleanMarkdownOutput(text);
     } catch (err) {
@@ -186,7 +190,7 @@ async function callDeepSeek({ apiKey, model, baseUrl, systemPrompt, userPromptTe
       model,
       messages,
       temperature: 0.2,
-      max_tokens: 8192
+      max_tokens: 16384
     })
   });
 
@@ -229,7 +233,8 @@ async function callOpenAICompatible({ apiKey, model, baseUrl, systemPrompt, user
     body: JSON.stringify({
       model,
       messages,
-      temperature: 0.2
+      temperature: 0.2,
+      max_tokens: 16384
     })
   });
 
@@ -296,6 +301,18 @@ function cleanMarkdownOutput(rawText) {
   } else if (text.startsWith('```') && text.endsWith('```')) {
     text = text.slice(3, -3).trim();
   }
+
+  // Gracefully resolve unclosed delimiters if response was truncated at token limit
+  const displayDollarCount = (text.match(/\$\$/g) || []).length;
+  if (displayDollarCount % 2 !== 0) {
+    text = text + '\n$$';
+  }
+
+  const fenceCount = (text.match(/```/g) || []).length;
+  if (fenceCount % 2 !== 0) {
+    text = text + '\n```';
+  }
+
   return text;
 }
 

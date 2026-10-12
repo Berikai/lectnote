@@ -56,6 +56,7 @@ if (command === 'export') {
 
 } else {
   // Start server
-  require('../server/app');
+  const { startServer } = require('../server/app');
+  startServer();
 }
 
