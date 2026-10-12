@@ -106,6 +106,15 @@ window.LectNotePreview = (function() {
     return parseBasicMarkdown(text);
   }
 
+  function normalizeType(rawType) {
+    const t = rawType.toLowerCase();
+    if (t === 'u' || t === 'uline' || t === 'u-line' || t === 'underline') return 'underline';
+    if (t === 'c' || t === 'circle') return 'circle';
+    if (t === 'b' || t === 'box') return 'box';
+    if (t === 'hl' || t === 'highlight') return 'highlight';
+    return t;
+  }
+
   function getDefaultColor(type) {
     const map = {
       circle: '#f87171',
@@ -139,6 +148,9 @@ window.LectNotePreview = (function() {
   }
 
   function replaceBracketAnnotations(text) {
+    // Support HTML <u>...</u> as hand-drawn underline
+    text = text.replace(/<u>([\s\S]*?)<\/u>/gi, '<span class="rn-elem" data-rn="underline" data-color="#fb923c">$1</span>');
+
     let result = '';
     let i = 0;
     while (i < text.length) {
@@ -157,9 +169,9 @@ window.LectNotePreview = (function() {
         if (depth === 0) {
           const content = text.slice(i + 1, j - 1);
           const remainder = text.slice(j);
-          const tagMatch = remainder.match(/^\{\.(circle|box|underline|highlight)(?:\s+(#[0-9a-fA-F]{3,6}))?\}/);
+          const tagMatch = remainder.match(/^\s*\{\.(circle|c|box|b|underline|u|uline|u-line|highlight|hl)(?:\s+(#[0-9a-fA-F]{3,6}))?\}/i);
           if (tagMatch) {
-            const type = tagMatch[1];
+            const type = normalizeType(tagMatch[1]);
             const color = tagMatch[2] || getDefaultColor(type);
             result += transformAnnotation(content, type, color);
             i = j + tagMatch[0].length;
@@ -283,11 +295,13 @@ window.LectNotePreview = (function() {
           const isBlock = el.tagName === 'DIV' || el.classList.contains('rn-block-box');
 
           try {
+            const isUnderline = type === 'underline';
             const annotation = RoughNotation.annotate(el, {
               type: type,
               color: color,
-              padding: isBlock ? 8 : (type === 'circle' ? 6 : 3),
-              multiline: type === 'highlight' || type === 'underline',
+              padding: isBlock ? 8 : (type === 'circle' ? 6 : (isUnderline ? [0, 2, 2, 2] : 3)),
+              strokeWidth: isUnderline ? 2.5 : 2,
+              multiline: type === 'highlight',
               iterations: 2
             });
             group.push(annotation);

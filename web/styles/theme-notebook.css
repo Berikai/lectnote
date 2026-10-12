@@ -114,15 +114,33 @@ body.theme-notebook {
 
 /* Rough Notation Elements */
 .rn-elem {
-  display: inline-block;
   position: relative;
+}
+
+.rn-elem[data-rn="underline"] {
+  display: inline;
+  text-decoration: underline;
+  text-decoration-color: #fb923c;
+  text-decoration-thickness: 2.5px;
+  text-underline-offset: 4px;
+}
+
+.rn-elem[data-rn="highlight"] {
+  display: inline;
+}
+
+.rn-elem[data-rn="box"],
+.rn-elem[data-rn="circle"] {
+  display: inline-block;
 }
 
 .rn-block-box {
   display: block;
-  margin: 18px 0;
+  margin: 18px auto;
   padding: 8px 12px;
   text-align: center;
+  width: fit-content;
+  max-width: 100%;
 }
 
 mark.rn-elem {

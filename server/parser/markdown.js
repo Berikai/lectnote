@@ -158,6 +158,15 @@ function createMarkdownParser(options = {}) {
   };
 }
 
+function normalizeType(rawType) {
+  const t = rawType.toLowerCase();
+  if (t === 'u' || t === 'uline' || t === 'u-line' || t === 'underline') return 'underline';
+  if (t === 'c' || t === 'circle') return 'circle';
+  if (t === 'b' || t === 'box') return 'box';
+  if (t === 'hl' || t === 'highlight') return 'highlight';
+  return t;
+}
+
 function getDefaultColor(type) {
   const map = {
     circle: '#f87171',
@@ -191,6 +200,9 @@ function transformAnnotation(content, type, color) {
 }
 
 function replaceBracketAnnotations(text) {
+  // Support HTML <u>...</u> as hand-drawn underline
+  text = text.replace(/<u>([\s\S]*?)<\/u>/gi, '<span class="rn-elem" data-rn="underline" data-color="#fb923c">$1</span>');
+
   let result = '';
   let i = 0;
   while (i < text.length) {
@@ -209,9 +221,9 @@ function replaceBracketAnnotations(text) {
       if (depth === 0) {
         const content = text.slice(i + 1, j - 1);
         const remainder = text.slice(j);
-        const tagMatch = remainder.match(/^\{\.(circle|box|underline|highlight)(?:\s+(#[0-9a-fA-F]{3,6}))?\}/);
+        const tagMatch = remainder.match(/^\s*\{\.(circle|c|box|b|underline|u|uline|u-line|highlight|hl)(?:\s+(#[0-9a-fA-F]{3,6}))?\}/i);
         if (tagMatch) {
-          const type = tagMatch[1];
+          const type = normalizeType(tagMatch[1]);
           const color = tagMatch[2] || getDefaultColor(type);
           result += transformAnnotation(content, type, color);
           i = j + tagMatch[0].length;

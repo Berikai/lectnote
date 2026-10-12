@@ -381,13 +381,13 @@ function generateStandaloneHtml({ title, renderedBody, theme, course, lecture })
           elements.forEach(el => {
             const type = el.getAttribute('data-rn');
             const color = el.getAttribute('data-color') || '#fef08a';
-            const isBlock = el.tagName === 'DIV' || el.classList.contains('rn-block-box');
-            
+            const isUnderline = type === 'underline';
             const annotation = RoughNotation.annotate(el, {
               type: type,
               color: color,
-              padding: isBlock ? 8 : 3,
-              multiline: type === 'highlight' || type === 'underline',
+              padding: isBlock ? 8 : (type === 'circle' ? 6 : (isUnderline ? [0, 2, 2, 2] : 3)),
+              strokeWidth: isUnderline ? 2.5 : 2,
+              multiline: type === 'highlight',
               iterations: 2
             });
             group.push(annotation);

@@ -98,6 +98,18 @@ body.theme-academic {
 }
 
 /* Academic Rough Notation or Highlighting */
+.academic-paper .rn-elem {
+  position: relative;
+}
+
+.academic-paper .rn-elem[data-rn="underline"] {
+  display: inline;
+  text-decoration: underline;
+  text-decoration-color: #f97316;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
 .academic-paper mark.rn-elem {
   background: #fef08a;
   color: #0f172a;
