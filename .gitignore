@@ -1,6 +1,45 @@
+# Dependencies
 node_modules/
-chrome/
-.DS_Store
+
+# Environment configuration & local secrets
 .env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+[Tt]humbs.db
+[Dd]esktop.ini
+
+# Editor and IDE configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs and debug output
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Browser binaries & cache
+chrome/
+.cache/
+
+# Generated PDF exports
 *.pdf
 
+# User lecture workspaces (sample demo lectures are retained in git)
+lectures/*
+!lectures/CS301-Algorithms/
+!lectures/CS301-Algorithms/**
+!lectures/MCE306-MaterialsScience/
+!lectures/MCE306-MaterialsScience/**
