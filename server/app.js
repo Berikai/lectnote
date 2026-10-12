@@ -28,11 +28,18 @@ app.use(express.static(path.join(__dirname, '..', 'web')));
 
 // Configure Multer for photo uploads
 const storage = multer.diskStorage({
-  destination: (req, cb) => {
-    const { course, lecture } = req.params;
-    const dest = path.join(LECTURES_DIR, course, lecture, 'photos');
-    fs.mkdirSync(dest, { recursive: true });
-    cb(null, dest);
+  destination: (req, file, cb) => {
+    try {
+      const course = req.params.course || 'default';
+      const lecture = req.params.lecture || 'default';
+      const safeCourse = course.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const safeLecture = lecture.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const dest = path.join(LECTURES_DIR, safeCourse, safeLecture, 'photos');
+      fs.mkdirSync(dest, { recursive: true });
+      cb(null, dest);
+    } catch (err) {
+      cb(err);
+    }
   },
   filename: (req, file, cb) => {
     // Sanitize filename
@@ -40,7 +47,13 @@ const storage = multer.diskStorage({
     cb(null, safeName);
   }
 });
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024,
+    files: 150
+  }
+});
 
 /**
  * 1. List all courses and lectures
@@ -172,13 +185,15 @@ app.put('/api/lectures/:course/:lecture', (req, res) => {
 /**
  * 5. Upload photos for a lecture
  */
-app.post('/api/lectures/:course/:lecture/upload', upload.array('photos', 50), (req, res) => {
-  try {
+app.post('/api/lectures/:course/:lecture/upload', (req, res) => {
+  upload.array('photos', 150)(req, res, (err) => {
+    if (err) {
+      console.error('Multer upload error:', err);
+      return res.status(400).json({ success: false, error: err.message || 'Photo upload failed' });
+    }
     const uploaded = (req.files || []).map(f => f.filename);
     res.json({ success: true, uploaded });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  });
 });
 
 /**
@@ -209,6 +224,7 @@ app.post('/api/lectures/:course/:lecture/ai-transcribe', async (req, res) => {
       customInstructions
     } = req.body;
 
+    const targetCourse = req.body.course || course;
     const lectureDir = path.join(LECTURES_DIR, course, lecture);
     const photosDir = path.join(lectureDir, 'photos');
     const photos = fs.existsSync(photosDir)
@@ -220,7 +236,7 @@ app.post('/api/lectures/:course/:lecture/ai-transcribe', async (req, res) => {
       apiKey: apiKey || process.env.GEMINI_API_KEY,
       baseUrl,
       model,
-      course,
+      course: targetCourse,
       subject: subject || 'Engineering',
       lectureTitle: lectureTitle || lecture,
       photos,
@@ -235,7 +251,7 @@ app.post('/api/lectures/:course/:lecture/ai-transcribe', async (req, res) => {
     res.json({ success: true, markdown: generatedMarkdown });
   } catch (err) {
     console.error('AI Transcribe error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -414,6 +430,18 @@ function generateStandaloneHtml({ title, renderedBody, theme, course, lecture })
 </body>
 </html>`;
 }
+
+// Global error handling middleware - always returns JSON
+app.use((err, req, res, next) => {
+  console.error('Unhandled server error:', err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || 'Internal Server Error'
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`LectNote Studio running at http://localhost:${PORT}`);

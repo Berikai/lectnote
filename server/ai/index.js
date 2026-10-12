@@ -82,15 +82,15 @@ async function callGemini({ apiKey, model, systemPrompt, userPromptText, images 
     throw new Error('Gemini API key is required. Please provide it in settings or set GEMINI_API_KEY environment variable.');
   }
 
-  // Construct Gemini generateContent request
+  // Construct Gemini generateContent request with official inlineData payload
   const contents = [
     {
       role: 'user',
       parts: [
         { text: `${systemPrompt}\n\n---\n${userPromptText}` },
         ...images.map(img => ({
-          inline_data: {
-            mime_type: img.mimeType,
+          inlineData: {
+            mimeType: img.mimeType,
             data: img.base64Data
           }
         }))
@@ -98,28 +98,59 @@ async function callGemini({ apiKey, model, systemPrompt, userPromptText, images 
     }
   ];
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents,
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 8192
-      }
-    })
-  });
+  // Candidates list to gracefully handle requested model or futuristic aliases
+  const requestedModel = (model || 'gemini-2.5-flash').trim();
+  const candidateModels = [
+    requestedModel,
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro'
+  ].filter((v, i, a) => a.indexOf(v) === i);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API Error (${response.status}): ${errorText}`);
+  let lastError = null;
+
+  for (let i = 0; i < candidateModels.length; i++) {
+    const currentModel = candidateModels[i];
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(currentModel)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents,
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 8192
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        // If model not found (404), try next available candidate
+        if (response.status === 404 && i < candidateModels.length - 1) {
+          console.warn(`Gemini model "${currentModel}" not found (404). Retrying with "${candidateModels[i + 1]}"...`);
+          lastError = new Error(`Gemini API Error (${response.status}): ${errorText}`);
+          continue;
+        }
+        throw new Error(`Gemini API Error (${response.status}): ${errorText}`);
+      }
+
+      const data = await response.json();
+      const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+      return cleanMarkdownOutput(text);
+    } catch (err) {
+      lastError = err;
+      if (err.message && err.message.includes('404') && i < candidateModels.length - 1) {
+        continue;
+      }
+      throw err;
+    }
   }
 
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
-  return cleanMarkdownOutput(text);
+  throw lastError || new Error('Failed to generate lecture notes from Gemini API');
 }
 
 /**

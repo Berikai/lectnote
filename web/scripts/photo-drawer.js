@@ -184,13 +184,19 @@ window.LectNotePhotoDrawer = (function() {
         method: 'POST',
         body: formData
       });
-      const data = await res.json();
-      if (data.success) {
+      const resText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(resText);
+      } catch (e) {
+        throw new Error(`Upload server error (${res.status}): ${resText.slice(0, 150)}`);
+      }
+      if (res.ok && data.success) {
         window.LectNoteApp.showToast(`Uploaded ${data.uploaded.length} photo(s)`, 'success');
         await window.LectNoteApp.reloadCurrentLecture();
         openDrawer();
       } else {
-        throw new Error(data.error);
+        throw new Error(data.error || 'Upload failed');
       }
     } catch (err) {
       window.LectNoteApp.showToast(`Upload failed: ${err.message}`, 'error');

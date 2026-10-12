@@ -221,12 +221,12 @@ function replaceBracketAnnotations(text) {
       if (depth === 0) {
         const content = text.slice(i + 1, j - 1);
         const remainder = text.slice(j);
-        const tagMatch = remainder.match(/^\s*\{\.(circle|c|box|b|underline|u|uline|u-line|highlight|hl)(?:\s+(#[0-9a-fA-F]{3,6}))?\}/i);
-        if (tagMatch) {
-          const type = normalizeType(tagMatch[1]);
-          const color = tagMatch[2] || getDefaultColor(type);
+        const annotationMatch = remainder.match(/^\s*\{\.(circle|c|box|b|underline|u|uline|u-line|highlight|hl)(?:\s+(#[0-9a-fA-F]{3,6}))?\}/i);
+        if (annotationMatch) {
+          const type = normalizeType(annotationMatch[1]);
+          const color = annotationMatch[2] || getDefaultColor(type);
           result += transformAnnotation(content, type, color);
-          i = j + tagMatch[0].length;
+          i = j + annotationMatch[0].length;
           continue;
         }
       }

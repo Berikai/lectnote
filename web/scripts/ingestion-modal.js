@@ -166,7 +166,7 @@ window.LectNoteIngestion = (function() {
     try {
       // 1. Upload staged photos if any
       if (stagedFiles.length > 0) {
-        window.LectNoteApp.showToast('Uploading lecture whiteboard photos...', 'info');
+        window.LectNoteApp.showToast(`Uploading ${stagedFiles.length} lecture whiteboard photo(s)...`, 'info');
         const formData = new FormData();
         stagedFiles.forEach(f => formData.append('photos', f));
 
@@ -174,8 +174,19 @@ window.LectNoteIngestion = (function() {
           method: 'POST',
           body: formData
         });
-        const upData = await upRes.json();
-        if (!upData.success) throw new Error(upData.error || 'Photo upload failed');
+
+        const upText = await upRes.text();
+        let upData;
+        try {
+          upData = JSON.parse(upText);
+        } catch (e) {
+          throw new Error(`Upload server error (${upRes.status}): ${upText.slice(0, 150)}`);
+        }
+
+        if (!upRes.ok || !upData.success) {
+          throw new Error(upData?.error || `Photo upload failed (${upRes.status})`);
+        }
+        window.LectNoteApp.showToast(`Uploaded ${upData.uploaded?.length || stagedFiles.length} photo(s) successfully!`, 'success');
       }
 
       // 2. Call AI Transcription endpoint
@@ -188,15 +199,23 @@ window.LectNoteIngestion = (function() {
           apiKey,
           baseUrl,
           model,
+          course: (inputCourse && inputCourse.value.trim()) || course,
           subject,
           lectureTitle: lecture.replace(/[-_]/g, ' '),
           customInstructions: customPrompt
         })
       });
 
-      const data = await res.json();
-      if (!data.success) {
-        throw new Error(data.error || 'AI transcription failed');
+      const resText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(resText);
+      } catch (e) {
+        throw new Error(`Transcription server error (${res.status}): ${resText.slice(0, 150)}`);
+      }
+
+      if (!res.ok || !data.success) {
+        throw new Error(data?.error || 'AI transcription failed');
       }
 
       // 3. Update Editor & Workspace
