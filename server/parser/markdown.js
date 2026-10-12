@@ -135,23 +135,18 @@ function createMarkdownParser(options = {}) {
         return `<mark class="rn-elem" data-rn="highlight" data-color="${c}">${content}</mark>`;
       });
 
-      // D. Process Bracketed Span Annotations: [content]{.circle}, [content]{.box}, [content]{.underline}, [content]{.highlight}
-      // Supports optional color: [content]{.circle #f87171}
-      text = text.replace(/\[([^\]]+)\]\{\.(circle|box|underline|highlight)(?:\s+(#[0-9a-fA-F]{3,6}))?\}/g, (match, content, type, color) => {
-        const defaultColors = {
-          circle: '#f87171',
-          box: '#60a5fa',
-          underline: '#fb923c',
-          highlight: '#fef08a'
-        };
-        const c = color || defaultColors[type] || '#fef08a';
-        return `<span class="rn-elem" data-rn="${type}" data-color="${c}">${content}</span>`;
+      // D. Auto-wrap standalone LaTeX environments (\begin{aligned} etc.) if not already inside $$
+      text = text.replace(/(^|\n)(\\begin\{(?:aligned|align\*?|matrix|pmatrix|bmatrix|vmatrix|cases|equation\*?)\}[\s\S]*?\\end\{(?:aligned|align\*?|matrix|pmatrix|bmatrix|vmatrix|cases|equation\*?)\})/g, (match, prefix, mathBlock) => {
+        return `${prefix}$$\n${mathBlock}\n$$`;
       });
 
-      // E. Render markdown
+      // E. Process Bracketed Annotations with nested bracket support & LaTeX auto-delimiters
+      text = replaceBracketAnnotations(text);
+
+      // F. Render markdown
       let html = md.render(text);
 
-      // F. Post-process Display Math with Box annotation wrapper if any
+      // G. Post-process Display Math with Box annotation wrapper if any
       // e.g., :::box $$...$$ :::
       html = html.replace(/<p>:::box\s*(#[0-9a-fA-F]{3,6})?<\/p>\s*([\s\S]*?)\s*<p>:::<\/p>/g, (match, color, inner) => {
         const c = color || '#60a5fa';
@@ -161,6 +156,73 @@ function createMarkdownParser(options = {}) {
       return html;
     }
   };
+}
+
+function getDefaultColor(type) {
+  const map = {
+    circle: '#f87171',
+    box: '#60a5fa',
+    underline: '#fb923c',
+    highlight: '#fef08a'
+  };
+  return map[type] || '#fef08a';
+}
+
+function transformAnnotation(content, type, color) {
+  let inner = content.trim();
+  const isDisplay = (inner.startsWith('$$') && inner.endsWith('$$')) || (inner.startsWith('\\[') && inner.endsWith('\\]'));
+  const isInline = (inner.startsWith('$') && inner.endsWith('$') && !isDisplay) || (inner.startsWith('\\(') && inner.endsWith('\\)'));
+  
+  // Detect if content contains LaTeX math commands without delimiters
+  const hasLatex = /\\[a-zA-Z]+|[_\^]\{|[+\-=<>]\s*\\/.test(inner);
+
+  if (!isDisplay && !isInline && hasLatex) {
+    if (inner.includes('\\frac') || inner.includes('\\int') || inner.includes('\\sum') || inner.includes('\\left')) {
+      inner = `$${inner}$`;
+    } else {
+      inner = `$${inner}$`;
+    }
+  }
+
+  const isBlock = isDisplay || inner.startsWith('$$');
+  const elemTag = isBlock ? 'div' : 'span';
+  const blockClass = isBlock ? (type === 'box' ? ' rn-block-box' : ' rn-block-circle') : '';
+  return `<${elemTag} class="rn-elem${blockClass}" data-rn="${type}" data-color="${color}">${inner}</${elemTag}>`;
+}
+
+function replaceBracketAnnotations(text) {
+  let result = '';
+  let i = 0;
+  while (i < text.length) {
+    if (text[i] === '[' && (i === 0 || text[i - 1] !== '\\')) {
+      let depth = 1;
+      let j = i + 1;
+      while (j < text.length && depth > 0) {
+        if (text[j] === '\\') {
+          j += 2;
+          continue;
+        }
+        if (text[j] === '[') depth++;
+        else if (text[j] === ']') depth--;
+        j++;
+      }
+      if (depth === 0) {
+        const content = text.slice(i + 1, j - 1);
+        const remainder = text.slice(j);
+        const tagMatch = remainder.match(/^\{\.(circle|box|underline|highlight)(?:\s+(#[0-9a-fA-F]{3,6}))?\}/);
+        if (tagMatch) {
+          const type = tagMatch[1];
+          const color = tagMatch[2] || getDefaultColor(type);
+          result += transformAnnotation(content, type, color);
+          i = j + tagMatch[0].length;
+          continue;
+        }
+      }
+    }
+    result += text[i];
+    i++;
+  }
+  return result;
 }
 
 function escapeHtml(str) {

@@ -38,9 +38,9 @@ Your task is to analyze these whiteboard photos from our lecture and convert the
    - Highlight core terms, laws, and definitions:
      ==core concept==
    - Circle key formulas, critical constants, or exam targets:
-     [\\sigma_f = \\sqrt{\\frac{2E\\gamma}{\\pi a}}]{.circle}
+     [$\\sigma_f = \\sqrt{\\frac{2E\\gamma}{\\pi a}}$]{.circle}
    - Box primary governing equations or fundamental definitions:
-     [J = -D \\frac{dC}{dx}]{.box}
+     [$J = -D \\frac{dC}{dx}$]{.box}
    - Underline critical warnings, tricky assumptions, or edge cases:
      [valid only for steady-state isotropic diffusion]{.underline}
 

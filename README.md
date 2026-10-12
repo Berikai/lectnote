@@ -88,3 +88,4 @@ lectures/
         ├── notes.md
         └── photos/
 ```
+

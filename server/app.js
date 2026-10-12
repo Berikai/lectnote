@@ -355,9 +355,13 @@ function generateStandaloneHtml({ title, renderedBody, theme, course, lecture })
           renderMathInElement(document.getElementById('render-content'), {
             delimiters: [
               { left: '$$', right: '$$', display: true },
-              { left: '$', right: '$', display: false }
+              { left: '$', right: '$', display: false },
+              { left: '\\[', right: '\\]', display: true },
+              { left: '\\(', right: '\\)', display: false }
             ],
-            throwOnError: false
+            throwOnError: false,
+            errorColor: '#cc0000',
+            strict: false
           });
         }
 

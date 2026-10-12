@@ -56,10 +56,10 @@ window.LectNoteEditor = (function() {
         wrapSelection('==', '==', 'highlighted text');
         break;
       case 'circle':
-        wrapSelection('[', ']{.circle}', 'key formula');
+        wrapSelection('[$', '$]{.circle}', '\\sigma_f = \\sqrt{\\frac{2E\\gamma}{\\pi a}}');
         break;
       case 'box':
-        wrapSelection('[', ']{.box}', 'definition');
+        wrapSelection('[$', '$]{.box}', 'J = -D \\frac{dC}{dx}');
         break;
       case 'underline':
         wrapSelection('[', ']{.underline}', 'warning point');

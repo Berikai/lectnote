@@ -25,7 +25,7 @@ Where:
 
 When the concentration gradient does not vary with time ($\frac{\partial C}{\partial t} = 0$), diffusion flux $J$ moves down the concentration gradient:
 
-[J = -D \frac{dC}{dx}]{.box}
+[$J = -D \frac{dC}{dx}$]{.box}
 
 * $J$: Diffusion flux ($\text{kg}/(\text{m}^2\cdot\text{s})$ or $\text{atoms}/(\text{m}^2\cdot\text{s})$)
 * $\frac{dC}{dx}$: Concentration gradient ($\text{kg}/\text{m}^4$)
@@ -86,7 +86,7 @@ $$\frac{\partial C}{\partial t} = D \frac{\partial^2 C}{\partial x^2}$$
 
 For semi-infinite solid boundary conditions ($C_s$ constant at surface, $C_0$ initial interior), the analytical solution uses the Gaussian error function:
 
-[\frac{C_x - C_0}{C_s - C_0} = 1 - \text{erf}\left(\frac{x}{2\sqrt{Dt}}\right)]{.circle}
+[$\frac{C_x - C_0}{C_s - C_0} = 1 - \text{erf}\left(\frac{x}{2\sqrt{Dt}}\right)$]{.circle}
 
 > [!tip] Exam Rule of Thumb
 > The characteristic diffusion penetration distance scales as:
