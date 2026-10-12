@@ -1,0 +1,5 @@
+node_modules/
+chrome/
+.DS_Store
+.env
+*.pdf

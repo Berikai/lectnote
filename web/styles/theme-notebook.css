@@ -1,0 +1,311 @@
+/**
+ * LectNote: Ruled Notebook Theme
+ * Collegiate notebook aesthetic with handwriting fonts, margin rule, ruled lines, and pinned sticky notes.
+ */
+
+:root {
+  --nb-paper: #fcfbf7;
+  --nb-lines: #e2e8f0;
+  --nb-margin-rule: #f87171;
+  --nb-ink: #0f172a;
+  --nb-heading: #1e3a8a;
+  --nb-line-height: 34px;
+}
+
+body.theme-notebook {
+  background: #cbd5e1;
+  color: var(--nb-ink);
+  font-family: 'Patrick Hand', cursive, sans-serif;
+  font-size: 21px;
+  line-height: var(--nb-line-height);
+  margin: 0;
+  padding: 0;
+}
+
+.notebook-paper {
+  background-color: var(--nb-paper);
+  background-image: linear-gradient(var(--nb-lines) 1px, transparent 1px);
+  background-size: 100% var(--nb-line-height);
+  position: relative;
+  max-width: 860px;
+  margin: 30px auto;
+  padding: 50px 50px 60px 85px;
+  border-radius: 4px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+}
+
+/* Left Red Margin Rule */
+.notebook-paper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 65px;
+  width: 2px;
+  background: var(--nb-margin-rule);
+}
+
+/* Meta Header */
+.note-meta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 17px;
+  color: #64748b;
+  margin-bottom: 20px;
+  border-bottom: 1px dashed #cbd5e1;
+  padding-bottom: 8px;
+}
+.note-course-tag {
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.note-title-tag {
+  font-style: italic;
+}
+
+/* Typography */
+.notebook-paper h1,
+.notebook-paper h2,
+.notebook-paper h3 {
+  font-family: 'Caveat', cursive, sans-serif;
+  line-height: 1.2;
+  margin-top: 28px;
+  margin-bottom: 12px;
+}
+
+.notebook-paper h1 {
+  font-size: 42px;
+  color: var(--nb-heading);
+  border-bottom: 2px solid #bfdbfe;
+  padding-bottom: 6px;
+}
+
+.notebook-paper h2 {
+  font-size: 32px;
+  color: #1e293b;
+  border-bottom: 1px dashed #94a3b8;
+  padding-bottom: 4px;
+}
+
+.notebook-paper h3 {
+  font-size: 26px;
+  color: #334155;
+}
+
+.notebook-paper p {
+  margin: 12px 0;
+}
+
+.notebook-paper code,
+.notebook-paper pre {
+  font-family: 'Fira Code', monospace;
+  font-size: 15px;
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.notebook-paper pre {
+  padding: 12px 16px;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+}
+
+/* Rough Notation Elements */
+.rn-elem {
+  display: inline-block;
+  position: relative;
+}
+
+.rn-block-box {
+  display: block;
+  margin: 18px 0;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+mark.rn-elem {
+  background: transparent;
+  color: inherit;
+}
+
+/* Sticky Notes */
+.sticky-note {
+  position: relative;
+  background: #fef08a;
+  padding: 18px 24px 18px 20px;
+  margin: 24px 0;
+  border-radius: 2px 2px 14px 2px;
+  box-shadow: 3px 6px 14px rgba(0, 0, 0, 0.08);
+  transform: rotate(-0.6deg);
+  border-left: 5px solid #eab308;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.sticky-note.sticky-tip {
+  background: #ecfdf5;
+  border-left-color: #10b981;
+}
+
+.sticky-note.sticky-warning {
+  background: #fff7ed;
+  border-left-color: #f97316;
+}
+
+.sticky-pin {
+  position: absolute;
+  top: -8px;
+  left: 20px;
+  width: 14px;
+  height: 14px;
+  background: #dc2626;
+  border-radius: 50%;
+  box-shadow: 1px 2px 4px rgba(0,0,0,0.3);
+}
+
+.sticky-title {
+  font-family: 'Caveat', cursive;
+  font-size: 24px;
+  font-weight: bold;
+  color: #713f12;
+  margin-bottom: 6px;
+}
+.sticky-note.sticky-tip .sticky-title { color: #065f46; }
+.sticky-note.sticky-warning .sticky-title { color: #9a3412; }
+
+.sticky-body p {
+  margin: 4px 0;
+  font-size: 20px;
+}
+
+/* Whiteboard Reference Card */
+.board-ref {
+  margin: 24px 0;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.board-ref-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.board-ref-tag {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.board-ref-filename {
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  color: #64748b;
+  flex: 1;
+}
+
+.btn-inspect-board {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  color: #334155;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-inspect-board:hover {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+}
+
+.board-ref-img-wrapper {
+  cursor: zoom-in;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #0f172a;
+}
+
+.board-ref img {
+  width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+  display: block;
+  transition: transform 0.2s;
+}
+
+.board-ref figcaption {
+  font-size: 16px;
+  color: #64748b;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Diagrams */
+.mermaid-wrapper, .svg-diagram-wrapper {
+  margin: 24px 0;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.svg-diagram-wrapper svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* KaTeX Display Equations */
+.katex-display {
+  margin: 18px 0 !important;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Print Styles */
+@media print {
+  body.theme-notebook {
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .notebook-paper {
+    box-shadow: none !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 20px 20px 20px 65px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .btn-inspect-board {
+    display: none !important;
+  }
+
+  .sticky-note, .board-ref, .mermaid-wrapper, .svg-diagram-wrapper, .katex-display {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+

@@ -1,0 +1,229 @@
+/**
+ * LectNote: Academic View Theme
+ * Clean, formal academic publication layout (IEEE / Springer / LaTeX style).
+ */
+
+:root {
+  --ac-bg: #ffffff;
+  --ac-text: #0f172a;
+  --ac-primary: #1e3a8a;
+  --ac-muted: #64748b;
+  --ac-border: #e2e8f0;
+}
+
+body.theme-academic {
+  background: #f1f5f9;
+  color: var(--ac-text);
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 19px;
+  line-height: 1.65;
+  margin: 0;
+  padding: 0;
+}
+
+.academic-paper {
+  background: var(--ac-bg);
+  max-width: 860px;
+  margin: 30px auto;
+  padding: 60px 60px 80px 60px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--ac-border);
+  box-sizing: border-box;
+}
+
+/* Meta Header */
+.academic-paper .note-meta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--ac-muted);
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 8px;
+  margin-bottom: 24px;
+}
+
+/* Typography */
+.academic-paper h1,
+.academic-paper h2,
+.academic-paper h3 {
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.academic-paper h1 {
+  font-size: 34px;
+  margin-top: 10px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--ac-border);
+  padding-bottom: 12px;
+}
+
+.academic-paper h2 {
+  font-size: 24px;
+  margin-top: 32px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 6px;
+}
+
+.academic-paper h3 {
+  font-size: 20px;
+  margin-top: 24px;
+  margin-bottom: 8px;
+}
+
+.academic-paper p {
+  margin: 14px 0;
+  text-align: justify;
+}
+
+.academic-paper code,
+.academic-paper pre {
+  font-family: 'Fira Code', monospace;
+  font-size: 14px;
+  background: #f8fafc;
+}
+
+.academic-paper pre {
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+/* Academic Rough Notation or Highlighting */
+.academic-paper mark.rn-elem {
+  background: #fef08a;
+  color: #0f172a;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.academic-paper .rn-block-box {
+  border: 1.5px solid #2563eb;
+  background: #eff6ff;
+  border-radius: 4px;
+  margin: 20px 0;
+  padding: 12px;
+  text-align: center;
+}
+
+/* Academic Callouts / Notes (Formal Theorem/Remark box) */
+.academic-paper .sticky-note {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid #2563eb;
+  border-radius: 4px;
+  padding: 16px 20px;
+  margin: 24px 0;
+  box-shadow: none;
+  transform: none;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.academic-paper .sticky-note.sticky-tip {
+  border-left-color: #059669;
+  background: #f0fdf4;
+}
+
+.academic-paper .sticky-note.sticky-warning {
+  border-left-color: #d97706;
+  background: #fffbeb;
+}
+
+.academic-paper .sticky-pin {
+  display: none;
+}
+
+.academic-paper .sticky-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  color: #1e3a8a;
+}
+.academic-paper .sticky-note.sticky-tip .sticky-title { color: #065f46; }
+.academic-paper .sticky-note.sticky-warning .sticky-title { color: #92400e; }
+
+.academic-paper .sticky-body {
+  font-family: 'Newsreader', serif;
+  font-size: 18px;
+}
+
+/* Board Reference Card */
+.academic-paper .board-ref {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 12px;
+  margin: 24px 0;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.academic-paper .board-ref-header {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+}
+
+.academic-paper .board-ref-tag {
+  background: #0f172a;
+  color: #ffffff;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.academic-paper figcaption {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: #64748b;
+  font-style: italic;
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* Diagrams */
+.academic-paper .mermaid-wrapper,
+.academic-paper .svg-diagram-wrapper {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 16px;
+  margin: 24px 0;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Print Rules */
+@media print {
+  body.theme-academic {
+    background: transparent !important;
+  }
+
+  .academic-paper {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .btn-inspect-board {
+    display: none !important;
+  }
+
+  .sticky-note, .board-ref, .mermaid-wrapper, .svg-diagram-wrapper, .katex-display {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+

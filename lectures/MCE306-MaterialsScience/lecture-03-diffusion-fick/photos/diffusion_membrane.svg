@@ -1,0 +1,31 @@
+<svg viewBox="0 0 740 380" xmlns="http://www.w3.org/2000/svg" style="background:#ffffff; font-family:'Inter', sans-serif;">
+  <!-- Whiteboard Outer Frame -->
+  <rect x="10" y="10" width="720" height="360" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="4"/>
+  
+  <!-- Board Header -->
+  <text x="35" y="45" font-size="20" font-weight="bold" fill="#1e3a8a">MCE 306: Board #3 — Steady-State Diffusion Flux</text>
+  <line x1="35" y1="58" x2="705" y2="58" stroke="#cbd5e1" stroke-width="2"/>
+
+  <!-- Coordinates -->
+  <line x1="80" y1="80" x2="80" y2="310" stroke="#0f172a" stroke-width="3" />
+  <line x1="80" y1="310" x2="680" y2="310" stroke="#0f172a" stroke-width="3" />
+
+  <!-- Membrane Slices -->
+  <line x1="180" y1="80" x2="180" y2="310" stroke="#dc2626" stroke-dasharray="6" stroke-width="2" />
+  <line x1="520" y1="80" x2="520" y2="310" stroke="#dc2626" stroke-dasharray="6" stroke-width="2" />
+
+  <!-- Linear Concentration Gradient -->
+  <line x1="180" y1="120" x2="520" y2="260" stroke="#2563eb" stroke-width="4.5" />
+  <circle cx="180" cy="120" r="7" fill="#dc2626" />
+  <circle cx="520" cy="260" r="7" fill="#dc2626" />
+
+  <!-- Annotations -->
+  <text x="35" y="190" font-size="16" fill="#0f172a" font-weight="bold" transform="rotate(-90 35,190)">Concentration C</text>
+  <text x="310" y="340" font-size="16" fill="#0f172a" font-weight="bold">Thickness &Delta;x</text>
+  <text x="120" y="115" font-size="18" fill="#dc2626" font-weight="bold">C_A (High)</text>
+  <text x="535" y="270" font-size="18" fill="#dc2626" font-weight="bold">C_B (Low)</text>
+  
+  <text x="320" y="170" font-size="20" fill="#16a34a" font-weight="bold">J = -D (dC/dx)</text>
+  <path d="M 330 190 L 410 190 M 395 180 L 415 190 L 395 200" fill="none" stroke="#16a34a" stroke-width="3.5" />
+</svg>
+

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LectNote Studio - STEM Lecture Notes</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Fira+Code:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Rough Notation -->
+  <script src="https://unpkg.com/rough-notation/dist/rough-notation.iife.js"></script>
+
+  <!-- Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+
+  <!-- Markdown-it (for instant client-side preview fallback) -->
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+
+  <!-- UI & Theme Styles -->
+  <link rel="stylesheet" href="/styles/main.css">
+  <link id="theme-stylesheet" rel="stylesheet" href="/styles/theme-notebook.css">
+</head>
+<body>
+
+  <!-- Top Studio Navigation Bar -->
+  <header class="studio-header">
+    <div class="header-left">
+      <div class="brand">
+        <span class="brand-icon">🖋️</span>
+        <span>LectNote</span>
+      </div>
+
+      <div class="workspace-select-group">
+        <select id="course-select" class="select-control" title="Select Course">
+          <option value="">Loading courses...</option>
+        </select>
+        <select id="lecture-select" class="select-control" title="Select Lecture">
+          <option value="">Loading lectures...</option>
+        </select>
+        <button id="btn-new-lecture" class="btn btn-ghost" title="Create New Lecture">+ New</button>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="view-segmented-control">
+        <button class="view-segmented-btn active" data-view="split">Split</button>
+        <button class="view-segmented-btn" data-view="editor">Editor</button>
+        <button class="view-segmented-btn" data-view="preview">Preview</button>
+      </div>
+
+      <button id="btn-theme-toggle" class="btn btn-theme-toggle" title="Toggle between Ruled Notebook and Academic View">
+        📓 Ruled Notebook
+      </button>
+    </div>
+
+    <div class="header-right">
+      <button id="btn-open-ingestion" class="btn btn-secondary" title="Import whiteboard photos or configure AI transcription">
+        📥 Ingest / Transcribe
+      </button>
+      <button id="btn-toggle-drawer" class="btn btn-secondary" title="Open Whiteboard Photo Drawer">
+        📷 Board Photos (<span id="photo-count-badge">0</span>)
+      </button>
+      <button id="btn-save" class="btn btn-secondary" title="Save notes (Ctrl+S / Cmd+S)">
+        💾 Save
+      </button>
+      <button id="btn-print-view" class="btn btn-secondary" title="Open standalone printable view (instant Ctrl+P)">
+        📄 Print View
+      </button>
+      <button id="btn-export-pdf" class="btn btn-primary" title="Export to Vector PDF via Headless Chrome">
+        🖨️ Export PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="studio-main">
+    
+    <!-- Left Pane: Editor -->
+    <section class="pane-editor" id="pane-editor">
+      <div class="editor-toolbar">
+        <button class="tool-btn" data-action="highlight" title="Highlight (==text==)">
+          <span style="background:#fef08a;color:#000;padding:0 3px;border-radius:2px;">==</span> HL
+        </button>
+        <button class="tool-btn" data-action="circle" title="Circle formula ([f]{.circle})">
+          ⭕ Circle
+        </button>
+        <button class="tool-btn" data-action="box" title="Box definition ([def]{.box})">
+          🔲 Box
+        </button>
+        <button class="tool-btn" data-action="underline" title="Underline warning ([warning]{.underline})">
+          <u>U</u> Line
+        </button>
+        <div class="tool-separator"></div>
+        <button class="tool-btn" data-action="math-inline" title="Inline Math ($...$)">
+          $x$
+        </button>
+        <button class="tool-btn" data-action="math-block" title="Display Math ($$...$$)">
+          $$ \sum $$
+        </button>
+        <button class="tool-btn" data-action="sticky" title="Professor Sticky Note Callout">
+          📌 Sticky
+        </button>
+        <div class="tool-separator"></div>
+        <button class="tool-btn" data-action="mermaid" title="Insert Mermaid Diagram">
+          📊 Mermaid
+        </button>
+        <button class="tool-btn" data-action="svg" title="Insert Vector SVG Diagram">
+          📐 SVG
+        </button>
+        <button class="tool-btn" data-action="board-ref" title="Insert Whiteboard Reference Tag">
+          📷 Board Ref
+        </button>
+      </div>
+
+      <div class="editor-wrapper">
+        <textarea id="markdown-input" spellcheck="false" placeholder="Type Markdown notes here..."></textarea>
+      </div>
+
+      <div class="editor-statusbar">
+        <span id="editor-stats">Lines: 0 | Words: 0</span>
+        <span id="save-status">All changes saved</span>
+      </div>
+    </section>
+
+    <!-- Right Pane: Live Preview -->
+    <section class="pane-preview" id="pane-preview">
+      <div class="preview-scroll-container">
+        <article id="preview-paper" class="notebook-paper">
+          <div class="note-meta-header">
+            <span id="preview-course-tag" class="note-course-tag">MCE 306</span>
+            <span id="preview-lecture-tag" class="note-title-tag">Diffusion & Fick's Laws</span>
+          </div>
+          <div id="preview-content" class="content-body">
+            <!-- Rendered content injected here -->
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Slide-out Whiteboard Photo Drawer -->
+    <aside class="photo-drawer" id="photo-drawer">
+      <div class="photo-drawer-header">
+        <span>📷 Whiteboard Photos (<span id="drawer-photo-count">0</span>)</span>
+        <div style="display:flex;gap:6px;">
+          <label class="btn btn-primary btn-icon" style="cursor:pointer;" title="Upload photos">
+            + Upload
+            <input type="file" id="drawer-file-input" multiple accept="image/*" style="display:none;">
+          </label>
+          <button id="btn-close-drawer" class="btn btn-ghost btn-icon">✕</button>
+        </div>
+      </div>
+      <div class="photo-drawer-content" id="photo-drawer-content">
+        <!-- Photo thumbnails injected here -->
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- Ingestion / AI Transcribe Modal -->
+  <div class="modal-overlay" id="modal-ingestion">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span>📥 Ingestion & Board Photo Transcription</span>
+        <button class="btn btn-ghost btn-close-modal" data-modal="modal-ingestion">✕</button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="form-group">
+          <label class="form-label">Select Ingestion Mode / Provider</label>
+          <div class="provider-grid">
+            <div class="provider-card selected" data-provider="gemini">
+              <div class="provider-title">🌟 Google Gemini</div>
+              <div class="provider-desc">Gemini 3.8 Flash (High-res batch multimodal)</div>
+            </div>
+            <div class="provider-card" data-provider="deepseek">
+              <div class="provider-title">⚡ DeepSeek</div>
+              <div class="provider-desc">DeepSeek v4.1 Flash (Visual reasoning)</div>
+            </div>
+            <div class="provider-card" data-provider="openai">
+              <div class="provider-title">🔌 OpenAI Compatible</div>
+              <div class="provider-desc">Custom Base URL (vLLM / Ollama / OpenRouter)</div>
+            </div>
+            <div class="provider-card" data-provider="manual">
+              <div class="provider-title">📝 Manual Mode</div>
+              <div class="provider-desc">Skip AI; write markdown directly with photo refs</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Credentials / Configuration -->
+        <div id="provider-config-fields">
+          <div class="form-group" id="field-base-url" style="display:none;">
+            <label class="form-label">Base URL</label>
+            <input type="text" id="input-base-url" class="form-input" placeholder="http://localhost:11434/v1 or https://openrouter.ai/api/v1">
+          </div>
+
+          <div class="form-group" id="field-api-key">
+            <label class="form-label">API Key</label>
+            <input type="password" id="input-api-key" class="form-input" placeholder="Enter API Key (saved locally in browser)">
+          </div>
+
+          <div class="form-group" id="field-model-name">
+            <label class="form-label">Model Name</label>
+            <input type="text" id="input-model-name" class="form-input" value="gemini-3.8-flash">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Course & Lecture Context</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <input type="text" id="input-context-course" class="form-input" placeholder="Course Code (e.g. MCE 306, MATH 201)">
+            <input type="text" id="input-context-subject" class="form-input" placeholder="Subject (e.g. Materials Science, Linear Algebra)">
+          </div>
+        </div>
+
+        <!-- Photo Upload Dropzone -->
+        <div class="form-group">
+          <label class="form-label">Whiteboard Photos for this Lecture</label>
+          <div class="dropzone" id="ingest-dropzone">
+            <div class="dropzone-icon">📷</div>
+            <div class="dropzone-text">Click to choose or drag & drop lecture photos here</div>
+            <div class="dropzone-hint">Supports high-res JPG, PNG, WEBP</div>
+            <input type="file" id="ingest-file-input" multiple accept="image/*" style="display:none;">
+          </div>
+          <div id="ingest-staged-photos" style="font-size:12px;color:#94a3b8;margin-top:6px;"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Custom TA Instructions (Optional)</label>
+          <input type="text" id="input-custom-prompt" class="form-input" placeholder="e.g. 'Focus heavily on derivation steps 3 and 4'">
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-close-modal" data-modal="modal-ingestion">Cancel</button>
+        <button id="btn-run-ingest" class="btn btn-primary">
+          <span class="btn-text">Start Ingestion</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Lecture Modal -->
+  <div class="modal-overlay" id="modal-new-lecture">
+    <div class="modal-card" style="max-width:440px;">
+      <div class="modal-header">
+        <span>+ Create New Lecture</span>
+        <button class="btn btn-ghost btn-close-modal" data-modal="modal-new-lecture">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Course Code / Name</label>
+          <input type="text" id="input-new-course" class="form-input" placeholder="e.g. PHYS 102 or CS 301">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lecture Slug / Identifier</label>
+          <input type="text" id="input-new-lecture" class="form-input" placeholder="e.g. lecture-05-electromagnetism">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lecture Topic / Title</label>
+          <input type="text" id="input-new-title" class="form-input" placeholder="e.g. Gauss's Law & Flux Integrals">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-close-modal" data-modal="modal-new-lecture">Cancel</button>
+        <button id="btn-create-lecture" class="btn btn-primary">Create Lecture</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox Modal for Photo Zoom & Inspect -->
+  <div class="lightbox-modal" id="lightbox-modal">
+    <div class="lightbox-toolbar">
+      <span id="lightbox-title">Whiteboard Reference</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="lightbox-zoom-out" class="btn btn-ghost btn-icon">🔍-</button>
+        <button id="lightbox-zoom-reset" class="btn btn-ghost btn-icon">100%</button>
+        <button id="lightbox-zoom-in" class="btn btn-ghost btn-icon">🔍+</button>
+        <button id="lightbox-close" class="btn btn-ghost btn-icon">✕</button>
+      </div>
+    </div>
+    <div class="lightbox-viewport" id="lightbox-viewport">
+      <img id="lightbox-img" class="lightbox-img" src="" alt="Whiteboard Inspection">
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Client-side Scripts -->
+  <script src="/scripts/preview.js"></script>
+  <script src="/scripts/editor.js"></script>
+  <script src="/scripts/photo-drawer.js"></script>
+  <script src="/scripts/ingestion-modal.js"></script>
+  <script src="/scripts/app.js"></script>
+</body>
+</html>
+

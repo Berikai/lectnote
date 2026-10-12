@@ -1,0 +1,33 @@
+{
+  "name": "lectnote",
+  "version": "1.0.0",
+  "description": "Transform whiteboard photos and lecture notes into interactive, styled notes and printable vector PDFs",
+  "main": "server/app.js",
+  "bin": {
+    "lectnote": "./bin/lectnote.js"
+  },
+  "scripts": {
+    "start": "node server/app.js",
+    "dev": "node --watch server/app.js",
+    "export": "node bin/lectnote.js export"
+  },
+  "keywords": [
+    "lecture-notes",
+    "katex",
+    "rough-notation",
+    "markdown",
+    "pdf-export",
+    "puppeteer",
+    "stem"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "markdown-it": "^14.1.0",
+    "multer": "^1.4.5-lts.1",
+    "puppeteer": "^23.4.0"
+  }
+}
+
