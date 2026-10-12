@@ -322,7 +322,7 @@ function generateStandaloneHtml({ title, renderedBody, theme, course, lecture })
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
   <!-- Rough Notation -->
-  <script src="https://unpkg.com/rough-notation/dist/rough-notation.iife.js"></script>
+  <script src="/vendor/rough-notation.iife.js"></script>
 
   <!-- Mermaid -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
