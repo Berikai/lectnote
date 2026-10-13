@@ -4,6 +4,8 @@
 
 `LectNote` is a local Node.js studio built for engineering and STEM lectures. It pairs **KaTeX** math, **Rough Notation** hand-drawn annotations, **AI-reconstructed code diagrams** (Mermaid & SVG), and an **interactive whiteboard reference inspector**, with a seamless toggle between **Ruled Notebook** and **Academic View**.
 
+![App Preview](image.png)
+
 ---
 
 ## ✨ Features
