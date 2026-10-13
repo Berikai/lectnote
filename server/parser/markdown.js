@@ -11,12 +11,28 @@
 
 function createMarkdownParser(options = {}) {
   const MarkdownIt = require('markdown-it');
+  let hljs;
+  try {
+    hljs = require('highlight.js');
+  } catch (e) {
+    hljs = null;
+  }
   
   const md = new MarkdownIt({
     html: true,
     linkify: true,
     typographer: true,
     breaks: false,
+    highlight: function (str, lang) {
+      if (hljs && lang && hljs.getLanguage(lang)) {
+        try {
+          return '<pre class="hljs"><code class="hljs language-' + lang + '">' +
+                 hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
+                 '</code></pre>';
+        } catch (__) {}
+      }
+      return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>';
+    },
     ...options
   });
 

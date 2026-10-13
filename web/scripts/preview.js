@@ -112,6 +112,7 @@ window.LectNotePreview = (function() {
     const lines = text.split('\n');
     const processedLines = [];
     let inSticky = false;
+    let stickyStartLine = 0;
     let stickyType = 'note';
     let stickyLabel = '';
     let stickyContent = [];
@@ -122,6 +123,7 @@ window.LectNotePreview = (function() {
       
       if (startMatch) {
         inSticky = true;
+        stickyStartLine = i;
         stickyType = startMatch[1];
         stickyLabel = startMatch[2];
         stickyContent = [];
@@ -136,12 +138,17 @@ window.LectNotePreview = (function() {
             stickyContent.push('');
           } else {
             inSticky = false;
-            processedLines.push(`<aside class="sticky-note sticky-${stickyType}"><div class="sticky-pin"></div><div class="sticky-title">${escapeHtml(stickyLabel)}</div><div class="sticky-body">${parseBasicMarkdown(stickyContent.join('\n'), codeBlocks)}</div></aside>`);
-            processedLines.push(line);
+            processedLines.push(`<aside class="sticky-note sticky-${stickyType}" data-source-line="${stickyStartLine}"><div class="sticky-pin"></div><div class="sticky-title">${escapeHtml(stickyLabel)}</div><div class="sticky-body">${parseBasicMarkdown(stickyContent.join('\n'), codeBlocks)}</div></aside>`);
+            while (processedLines.length <= i) {
+              processedLines.push('');
+            }
           }
         } else {
           inSticky = false;
-          processedLines.push(`<aside class="sticky-note sticky-${stickyType}"><div class="sticky-pin"></div><div class="sticky-title">${escapeHtml(stickyLabel)}</div><div class="sticky-body">${parseBasicMarkdown(stickyContent.join('\n'), codeBlocks)}</div></aside>`);
+          processedLines.push(`<aside class="sticky-note sticky-${stickyType}" data-source-line="${stickyStartLine}"><div class="sticky-pin"></div><div class="sticky-title">${escapeHtml(stickyLabel)}</div><div class="sticky-body">${parseBasicMarkdown(stickyContent.join('\n'), codeBlocks)}</div></aside>`);
+          while (processedLines.length < i) {
+            processedLines.push('');
+          }
           processedLines.push(line);
         }
       } else {
@@ -150,13 +157,17 @@ window.LectNotePreview = (function() {
     }
 
     if (inSticky) {
-      processedLines.push(`<aside class="sticky-note sticky-${stickyType}"><div class="sticky-pin"></div><div class="sticky-title">${escapeHtml(stickyLabel)}</div><div class="sticky-body">${parseBasicMarkdown(stickyContent.join('\n'), codeBlocks)}</div></aside>`);
+      processedLines.push(`<aside class="sticky-note sticky-${stickyType}" data-source-line="${stickyStartLine}"><div class="sticky-pin"></div><div class="sticky-title">${escapeHtml(stickyLabel)}</div><div class="sticky-body">${parseBasicMarkdown(stickyContent.join('\n'), codeBlocks)}</div></aside>`);
+      while (processedLines.length < lines.length) {
+        processedLines.push('');
+      }
     }
 
     text = processedLines.join('\n');
 
     // 2. Board References: :::board-ref [photo.jpg] [photo2.jpg] "Caption" :::
-    text = text.replace(/:::\s*board-ref\s+((?:\[[^\]]+\]\s*)+)(?:"([^"]*)")?\s*:::/gi, (match, rawPhotos, caption) => {
+    text = text.replace(/:::\s*board-ref\s+((?:\[[^\]]+\]\s*)+)(?:"([^"]*)")?\s*:::/gi, (match, rawPhotos, caption, offset) => {
+      const lineNum = text.substring(0, offset).split('\n').length - 1;
       const photos = [];
       for (const bm of rawPhotos.matchAll(/\[([^\]]+)\]/g)) {
         photos.push(...bm[1].split(/[,;\s]+/).map(p => p.trim()).filter(Boolean));
@@ -168,7 +179,7 @@ window.LectNotePreview = (function() {
       if (photos.length === 1) {
         const filename = photos[0];
         const photoUrl = photoBaseUrl ? `${photoBaseUrl}${encodeURIComponent(filename)}` : filename;
-        return `<figure class="board-ref" data-photo="${escapeHtml(filename)}">
+        return `<figure class="board-ref" data-source-line="${lineNum}" data-photo="${escapeHtml(filename)}">
           <div class="board-ref-header">
             <span class="board-ref-tag"><svg class="ui-icon" style="width:12px;height:12px;margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Board Ref</span>
             <span class="board-ref-filename">${escapeHtml(filename)}</span>
@@ -198,7 +209,7 @@ window.LectNotePreview = (function() {
         </div>`;
       }).join('');
 
-      return `<figure class="board-ref board-ref-multi">
+      return `<figure class="board-ref board-ref-multi" data-source-line="${lineNum}">
         <div class="board-ref-header">
           <span class="board-ref-tag"><svg class="ui-icon" style="width:12px;height:12px;margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Board Ref (${photos.length} photos)</span>
           <span class="board-ref-filename">${escapeHtml(photos.join(', '))}</span>
@@ -346,7 +357,26 @@ window.LectNotePreview = (function() {
         html: true,
         linkify: true,
         typographer: true,
-        breaks: false
+        breaks: false,
+        highlight: function (str, lang) {
+          if (window.hljs && lang && window.hljs.getLanguage(lang)) {
+            try {
+              return '<pre class="hljs"><code class="hljs language-' + lang + '">' +
+                     window.hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
+                     '</code></pre>';
+            } catch (__) {}
+          }
+          return '<pre class="hljs"><code>' + escapeHtml(str) + '</code></pre>';
+        }
+      });
+
+      // Inject data-source-line onto all block tokens
+      md.core.ruler.push('source_line_attrs', function(state) {
+        state.tokens.forEach(token => {
+          if (token.map) {
+            token.attrSet('data-source-line', String(token.map[0]));
+          }
+        });
       });
 
       const origFence = md.renderer.rules.fence || function(tokens, idx, options, env, self) {
@@ -355,14 +385,19 @@ window.LectNotePreview = (function() {
 
       md.renderer.rules.fence = function(tokens, idx, options, env, self) {
         const token = tokens[idx];
+        const lineAttr = token.map ? ` data-source-line="${token.map[0]}"` : '';
         const info = token.info ? token.info.trim() : '';
         if (info === 'mermaid') {
-          return `<div class="mermaid-wrapper"><div class="mermaid">\n${sanitizeMermaid(token.content)}\n</div></div>`;
+          return `<div class="mermaid-wrapper"${lineAttr}><div class="mermaid">\n${sanitizeMermaid(token.content)}\n</div></div>`;
         }
         if (info === 'svg') {
-          return `<div class="svg-diagram-wrapper">\n${token.content}\n</div>`;
+          return `<div class="svg-diagram-wrapper"${lineAttr}>\n${token.content}\n</div>`;
         }
-        return origFence(tokens, idx, options, env, self);
+        const rendered = origFence(tokens, idx, options, env, self);
+        if (lineAttr && !rendered.includes('data-source-line')) {
+          return rendered.replace(/^<pre\b/, `<pre${lineAttr}`);
+        }
+        return rendered;
       };
 
       const defaultTableOpen = md.renderer.rules.table_open || function(tokens, idx, options, env, self) {
@@ -373,7 +408,9 @@ window.LectNotePreview = (function() {
       };
 
       md.renderer.rules.table_open = function(tokens, idx, options, env, self) {
-        return '<div class="table-wrapper">\n' + defaultTableOpen(tokens, idx, options, env, self);
+        const token = tokens[idx];
+        const lineAttr = token.map ? ` data-source-line="${token.map[0]}"` : '';
+        return `<div class="table-wrapper"${lineAttr}>\n` + defaultTableOpen(tokens, idx, options, env, self);
       };
       md.renderer.rules.table_close = function(tokens, idx, options, env, self) {
         return defaultTableClose(tokens, idx, options, env, self) + '\n</div>';
@@ -484,11 +521,242 @@ window.LectNotePreview = (function() {
       .replace(/'/g, '&#39;');
   }
 
+  let lastEditLine = null;
+  let searchHighlightTimer = null;
+
+  function scrollToLine(lineIndex, smooth = true) {
+    if (typeof lineIndex !== 'number' || lineIndex < 0) return;
+    const container = document.getElementById('preview-content');
+    const scrollContainer = document.querySelector('.preview-scroll-container');
+    if (!container || !scrollContainer) return;
+
+    const elements = Array.from(container.querySelectorAll('[data-source-line]'));
+    if (elements.length === 0) return;
+
+    // Handle top
+    if (lineIndex === 0) {
+      scrollContainer.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
+      return;
+    }
+
+    let targetEl = null;
+    let targetLine = -1;
+
+    for (const el of elements) {
+      const l = parseInt(el.getAttribute('data-source-line'), 10);
+      if (!isNaN(l)) {
+        if (l <= lineIndex && l >= targetLine) {
+          targetLine = l;
+          targetEl = el;
+        }
+      }
+    }
+
+    // Check if lineIndex is past the end of known elements
+    const maxLine = elements.reduce((max, el) => {
+      const l = parseInt(el.getAttribute('data-source-line'), 10);
+      return isNaN(l) ? max : Math.max(max, l);
+    }, 0);
+
+    if (lineIndex > maxLine + 2) {
+      scrollContainer.scrollTo({
+        top: scrollContainer.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+      return;
+    }
+
+    if (!targetEl && elements.length > 0) {
+      targetEl = elements[0];
+    }
+
+    if (targetEl) {
+      const blockEl = targetEl.closest('h1, h2, h3, h4, h5, h6, p, ul, ol, li, blockquote, .table-wrapper, .mermaid-wrapper, .svg-diagram-wrapper, .sticky-note, .board-ref, pre') || targetEl;
+
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const elRect = blockEl.getBoundingClientRect();
+      const padTop = 60;
+      const padBottom = 80;
+
+      const relTop = elRect.top - containerRect.top;
+      const relBottom = elRect.bottom - containerRect.top;
+
+      // If already comfortably visible, avoid unnecessary jumping
+      if (relTop >= padTop && relBottom <= scrollContainer.clientHeight - padBottom) {
+        return;
+      }
+
+      const targetScroll = (relTop + scrollContainer.scrollTop) - padTop;
+      const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+      const clampedScroll = Math.max(0, Math.min(targetScroll, maxScroll));
+
+      scrollContainer.scrollTo({
+        top: clampedScroll,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+    }
+  }
+
+  function clearSearchHighlights() {
+    clearTimeout(searchHighlightTimer);
+    const container = document.getElementById('preview-content');
+    if (!container) return;
+    container.querySelectorAll('.search-section-highlight').forEach(el => {
+      el.classList.remove('search-section-highlight');
+    });
+    container.querySelectorAll('.search-finding-highlight').forEach(mark => {
+      if (mark.parentNode) {
+        const textNode = document.createTextNode(mark.textContent);
+        const parent = mark.parentNode;
+        parent.replaceChild(textNode, mark);
+        parent.normalize();
+      }
+    });
+  }
+
+  function highlightAndScrollSearch({ query, lineNum, matchIdx }) {
+    const container = document.getElementById('preview-content');
+    const scrollContainer = document.querySelector('.preview-scroll-container');
+    if (!container || !scrollContainer) return;
+
+    clearSearchHighlights();
+
+    let targetEl = null;
+    let createdMark = null;
+
+    if (query && query.trim()) {
+      const qClean = query.trim();
+      const qLower = qClean.toLowerCase();
+
+      const textNodes = [];
+      const walker = document.createTreeWalker(
+        container,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: function(node) {
+            if (!node.textContent || !node.textContent.toLowerCase().includes(qLower)) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            const parent = node.parentElement;
+            if (!parent) return NodeFilter.FILTER_REJECT;
+            const tag = parent.tagName;
+            if (tag === 'SCRIPT' || tag === 'STYLE' || parent.classList.contains('search-finding-highlight')) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        }
+      );
+
+      let n;
+      while ((n = walker.nextNode())) {
+        textNodes.push(n);
+      }
+
+      let bestNode = null;
+      if (textNodes.length > 0) {
+        if (typeof lineNum === 'number') {
+          let bestDist = Infinity;
+          for (const node of textNodes) {
+            const block = node.parentElement.closest('[data-source-line]');
+            if (block) {
+              const l = parseInt(block.getAttribute('data-source-line'), 10);
+              if (!isNaN(l)) {
+                const dist = Math.abs(l - lineNum);
+                if (dist < bestDist) {
+                  bestDist = dist;
+                  bestNode = node;
+                }
+              }
+            }
+          }
+        }
+        if (!bestNode) bestNode = textNodes[0];
+      }
+
+      if (bestNode) {
+        const text = bestNode.textContent;
+        const idx = text.toLowerCase().indexOf(qLower);
+        if (idx !== -1) {
+          const before = text.substring(0, idx);
+          const matchText = text.substring(idx, idx + qClean.length);
+          const after = text.substring(idx + qClean.length);
+
+          const mark = document.createElement('mark');
+          mark.className = 'search-finding-highlight';
+          mark.textContent = matchText;
+
+          const frag = document.createDocumentFragment();
+          if (before) frag.appendChild(document.createTextNode(before));
+          frag.appendChild(mark);
+          if (after) frag.appendChild(document.createTextNode(after));
+
+          const parent = bestNode.parentElement;
+          parent.replaceChild(frag, bestNode);
+
+          createdMark = mark;
+          targetEl = mark;
+        }
+      }
+    }
+
+    if (!targetEl && typeof lineNum === 'number') {
+      const elements = Array.from(container.querySelectorAll('[data-source-line]'));
+      let bestDist = Infinity;
+      for (const el of elements) {
+        const l = parseInt(el.getAttribute('data-source-line'), 10);
+        if (!isNaN(l)) {
+          const dist = Math.abs(l - lineNum);
+          if (dist < bestDist) {
+            bestDist = dist;
+            targetEl = el;
+          }
+        }
+      }
+    }
+
+    if (!targetEl) {
+      targetEl = document.getElementById('preview-lecture-tag') || container.firstElementChild;
+    }
+
+    if (targetEl) {
+      const blockEl = targetEl.closest('h1, h2, h3, h4, h5, h6, p, ul, ol, li, blockquote, .table-wrapper, .mermaid-wrapper, .svg-diagram-wrapper, .sticky-note, .board-ref, pre') || targetEl;
+      blockEl.classList.add('search-section-highlight');
+
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const elRect = targetEl.getBoundingClientRect();
+      const targetScroll = (elRect.top - containerRect.top + scrollContainer.scrollTop) - (scrollContainer.clientHeight / 2 - elRect.height / 2);
+      const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+      const clampedScroll = Math.max(0, Math.min(targetScroll, maxScroll));
+
+      scrollContainer.scrollTo({
+        top: clampedScroll,
+        behavior: 'smooth'
+      });
+
+      searchHighlightTimer = setTimeout(() => {
+        blockEl.classList.remove('search-section-highlight');
+        if (createdMark && createdMark.parentNode) {
+          const textNode = document.createTextNode(createdMark.textContent);
+          const parent = createdMark.parentNode;
+          parent.replaceChild(textNode, createdMark);
+          parent.normalize();
+        }
+      }, 2800);
+    }
+  }
+
   /**
    * Main render trigger
    */
-  async function updatePreview(markdownText, course, lecture, immediate = false) {
+  async function updatePreview(markdownText, course, lecture, immediate = false, editInfo = null) {
     if (debounceTimer) clearTimeout(debounceTimer);
+
+    if (editInfo && editInfo.isUserEdit && typeof editInfo.lineIndex === 'number') {
+      lastEditLine = editInfo.lineIndex;
+      // Scroll immediately so preview reacts instantaneously to edit
+      scrollToLine(editInfo.lineIndex, true);
+    }
 
     const execute = async () => {
       const container = document.getElementById('preview-content');
@@ -603,7 +871,7 @@ window.LectNotePreview = (function() {
         setupResizeObserver();
       }
 
-      // 7. Bind photo inspection buttons
+      // 9. Bind photo inspection buttons
       container.querySelectorAll('.btn-inspect-board, .board-ref-img-wrapper').forEach(btn => {
         btn.onclick = (e) => {
           e.preventDefault();
@@ -613,6 +881,12 @@ window.LectNotePreview = (function() {
           }
         };
       });
+
+      // 10. After complete layout, images, and KaTeX settle, maintain alignment if user made edit
+      if (lastEditLine !== null) {
+        scrollToLine(lastEditLine, false);
+        lastEditLine = null;
+      }
     };
 
     if (immediate) {
@@ -623,7 +897,10 @@ window.LectNotePreview = (function() {
   }
 
   return {
-    updatePreview
+    updatePreview,
+    scrollToLine,
+    highlightAndScrollSearch,
+    clearSearchHighlights
   };
 })();
 

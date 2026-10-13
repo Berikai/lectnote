@@ -17,6 +17,7 @@ window.LectNotePhotoDrawer = (function() {
   const lightboxViewport = document.getElementById('lightbox-viewport');
 
   let currentPhotos = [];
+  let currentLightboxPhoto = '';
   let zoomLevel = 1;
   let panX = 0;
   let panY = 0;
@@ -50,6 +51,15 @@ window.LectNotePhotoDrawer = (function() {
     document.getElementById('lightbox-zoom-in').addEventListener('click', () => setZoom(zoomLevel + 0.3));
     document.getElementById('lightbox-zoom-out').addEventListener('click', () => setZoom(Math.max(0.4, zoomLevel - 0.3)));
     document.getElementById('lightbox-zoom-reset').addEventListener('click', () => resetTransform());
+
+    const btnLightboxDelete = document.getElementById('lightbox-delete');
+    if (btnLightboxDelete) {
+      btnLightboxDelete.addEventListener('click', () => {
+        if (currentLightboxPhoto) {
+          deletePhoto(currentLightboxPhoto);
+        }
+      });
+    }
 
     // Lightbox mouse drag pan
     if (lightboxViewport) {
@@ -113,6 +123,8 @@ window.LectNotePhotoDrawer = (function() {
     currentPhotos = photos || [];
     const count = currentPhotos.length;
     if (countBadge) countBadge.textContent = count;
+    const overflowBadge = document.getElementById('overflow-photo-count-badge');
+    if (overflowBadge) overflowBadge.textContent = count;
     if (drawerCount) drawerCount.textContent = count;
 
     if (!drawerContent) return;
@@ -136,10 +148,15 @@ window.LectNotePhotoDrawer = (function() {
         <div class="photo-card" data-photo="${escapeHtml(photo)}">
           <img src="${url}" alt="${escapeHtml(photo)}" loading="lazy" />
           <div class="photo-card-info">
-            <span style="font-family:var(--font-mono);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:270px;">${escapeHtml(photo)}</span>
-            <button class="btn btn-ghost btn-icon-only btn-copy-ref" data-photo="${escapeHtml(photo)}" title="Copy board reference tag">
-              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            </button>
+            <span style="font-family:var(--font-mono);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px;">${escapeHtml(photo)}</span>
+            <div style="display:flex;gap:3px;margin-left:auto;">
+              <button class="btn btn-ghost btn-icon-only btn-copy-ref" data-photo="${escapeHtml(photo)}" title="Copy board reference tag">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+              <button class="btn btn-ghost btn-icon-only btn-delete-photo" data-photo="${escapeHtml(photo)}" title="Delete photo" style="color:#ef4444;">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       `;
@@ -148,7 +165,7 @@ window.LectNotePhotoDrawer = (function() {
     // Bind card click to open Lightbox
     drawerContent.querySelectorAll('.photo-card').forEach(card => {
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.btn-copy-ref')) return;
+        if (e.target.closest('.btn-copy-ref') || e.target.closest('.btn-delete-photo')) return;
         const photo = card.dataset.photo;
         openLightbox(photo);
       });
@@ -166,6 +183,43 @@ window.LectNotePhotoDrawer = (function() {
         }
       });
     });
+
+    // Bind delete photo button
+    drawerContent.querySelectorAll('.btn-delete-photo').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const photo = btn.dataset.photo;
+        deletePhoto(photo);
+      });
+    });
+  }
+
+  async function deletePhoto(photoName) {
+    if (!window.LectNoteApp) return;
+    const { course, lecture } = window.LectNoteApp.getCurrentWorkspace();
+    if (!course || !lecture || !photoName) return;
+
+    if (!confirm(`Are you sure you want to delete "${photoName}"? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/lectures/${encodeURIComponent(course)}/${encodeURIComponent(lecture)}/photos/${encodeURIComponent(photoName)}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        window.LectNoteApp.showToast(`Deleted ${photoName}`, 'info');
+        if (lightboxModal && lightboxModal.classList.contains('active')) {
+          closeLightbox();
+        }
+        await window.LectNoteApp.reloadCurrentLecture();
+      } else {
+        throw new Error(data.error || 'Failed to delete photo');
+      }
+    } catch (err) {
+      window.LectNoteApp.showToast(`Delete failed: ${err.message}`, 'error');
+    }
   }
 
   async function uploadPhotos(fileList) {
@@ -208,6 +262,7 @@ window.LectNotePhotoDrawer = (function() {
 
   function openLightbox(photoName) {
     if (!lightboxModal || !window.LectNoteApp) return;
+    currentLightboxPhoto = photoName;
     const { course, lecture } = window.LectNoteApp.getCurrentWorkspace();
     const url = `/api/lectures/${encodeURIComponent(course)}/${encodeURIComponent(lecture)}/photos/${encodeURIComponent(photoName)}`;
 

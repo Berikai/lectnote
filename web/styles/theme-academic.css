@@ -37,15 +37,39 @@ body.theme-academic {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: var(--ac-muted);
   border-bottom: 2px solid #0f172a;
   padding-bottom: 8px;
   margin-bottom: 24px;
+}
+
+.academic-paper .meta-tag-pill,
+.academic-paper .note-course-tag {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  line-height: normal;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+.academic-paper .meta-title-text,
+.academic-paper .note-title-tag {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ac-muted);
+  line-height: normal;
 }
 
 /* Typography */
@@ -437,6 +461,10 @@ body.theme-academic {
 }
 
 @media (max-width: 640px) {
+  .academic-paper {
+    margin: 12px 8px !important;
+    padding: 24px 16px 40px !important;
+  }
   .academic-paper .board-ref-gallery,
   .board-ref-gallery {
     grid-template-columns: 1fr !important;

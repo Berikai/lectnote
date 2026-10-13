@@ -1,0 +1,12 @@
+[
+  {
+    "role": "user",
+    "content": "Walk through the most critical formulas and derivations in these notes step by step.",
+    "timestamp": "2026-10-13T13:44:54.004Z"
+  },
+  {
+    "role": "assistant",
+    "content": "### 📚 Study Assistant Insights\n\nYou're reviewing **lecture 04 graph traversal** in *CS301 Algorithms*.\n\nHere are relevant sections extracted directly from your current lecture notes:\n\n> > Notes for CS301-Algorithms (Computer Science).\n> Write your concepts and derivations here.\n\n> [!tip] Direct AI Tutoring Setup\n> To enable real-time interactive AI responses with KaTeX derivations, configure your **Gemini API Key** in Workspace Settings (⌘,) or use LectNote's built-in **MCP Server** (`node bin/lectnote-mcp.js`) with Claude Desktop, Cursor, or Antigravity without incurring extra costs!",
+    "timestamp": "2026-10-13T13:44:54.004Z"
+  }
+]

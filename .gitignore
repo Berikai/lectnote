@@ -34,12 +34,25 @@ pnpm-debug.log*
 chrome/
 .cache/
 
-# Generated PDF exports
-*.pdf
-
 # User lecture workspaces (sample demo lectures are retained in git)
 lectures/*
 !lectures/CS301-Algorithms/
 !lectures/CS301-Algorithms/**
 !lectures/MCE306-MaterialsScience/
 !lectures/MCE306-MaterialsScience/**
+
+# Never track OS artifacts anywhere, including retained lecture workspaces
+**/.DS_Store
+lectures/**/.DS_Store
+
+# Generated PDF exports (including inside lecture workspaces)
+*.pdf
+
+# Electron build outputs
+dist/
+*.dmg
+*.zip
+*.AppImage
+*.deb
+*.exe
+

@@ -211,21 +211,21 @@ window.LectNoteIngestion = (function() {
     }
 
     // Set model default if not customized
-    const savedModel = localStorage.getItem(`lectnote_${selectedProvider}_model`);
+    const savedModel = localStorage.getItem(`lectnote_${selectedProvider}_model`) || (selectedProvider === 'gemini' ? localStorage.getItem('lectnote_ai_model') : '');
     inputModelName.value = savedModel || defaultModels[selectedProvider] || '';
 
     // Load saved API key for provider
-    const savedKey = localStorage.getItem(`lectnote_${selectedProvider}_key`);
+    const savedKey = localStorage.getItem(`lectnote_${selectedProvider}_key`) || (selectedProvider === 'gemini' ? localStorage.getItem('lectnote_api_key') : '');
     inputApiKey.value = savedKey || '';
 
     // Load saved Base URL if applicable
     if (selectedProvider === 'openai') {
-      inputBaseUrl.value = localStorage.getItem('lectnote_openai_baseurl') || 'http://localhost:11434/v1';
+      inputBaseUrl.value = localStorage.getItem('lectnote_openai_baseurl') || localStorage.getItem('lectnote_ai_base_url') || 'http://localhost:11434/v1';
     }
   }
 
   function loadSavedSettings() {
-    const lastProvider = localStorage.getItem('lectnote_provider');
+    const lastProvider = localStorage.getItem('lectnote_provider') || localStorage.getItem('lectnote_ai_provider');
     if (lastProvider) {
       selectedProvider = lastProvider;
       providerCards.forEach(c => {
@@ -236,14 +236,29 @@ window.LectNoteIngestion = (function() {
 
   function saveSettings() {
     localStorage.setItem('lectnote_provider', selectedProvider);
+    localStorage.setItem('lectnote_ai_provider', selectedProvider);
     if (inputApiKey.value) {
-      localStorage.setItem(`lectnote_${selectedProvider}_key`, inputApiKey.value.trim());
+      const keyVal = inputApiKey.value.trim();
+      localStorage.setItem(`lectnote_${selectedProvider}_key`, keyVal);
+      if (selectedProvider === 'gemini') {
+        localStorage.setItem('lectnote_api_key', keyVal);
+        localStorage.setItem('lectnote_gemini_key', keyVal);
+      }
     }
     if (inputModelName.value) {
-      localStorage.setItem(`lectnote_${selectedProvider}_model`, inputModelName.value.trim());
+      const modelVal = inputModelName.value.trim();
+      localStorage.setItem(`lectnote_${selectedProvider}_model`, modelVal);
+      if (selectedProvider === 'gemini') {
+        localStorage.setItem('lectnote_ai_model', modelVal);
+      }
     }
     if (selectedProvider === 'openai' && inputBaseUrl.value) {
-      localStorage.setItem('lectnote_openai_baseurl', inputBaseUrl.value.trim());
+      const urlVal = inputBaseUrl.value.trim();
+      localStorage.setItem('lectnote_openai_baseurl', urlVal);
+      localStorage.setItem('lectnote_ai_base_url', urlVal);
+    }
+    if (window.LectNoteSettings) {
+      window.LectNoteSettings.updateAssistantStatusBadge();
     }
   }
 

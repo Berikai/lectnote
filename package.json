@@ -2,14 +2,68 @@
   "name": "lectnote",
   "version": "1.0.0",
   "description": "Transform whiteboard photos and lecture notes into interactive, styled notes and printable vector PDFs",
-  "main": "server/app.js",
+  "main": "electron/main.js",
   "bin": {
-    "lectnote": "./bin/lectnote.js"
+    "lectnote": "./bin/lectnote.js",
+    "lectnote-mcp": "./bin/lectnote-mcp.js"
   },
   "scripts": {
+    "test": "node --test",
+    "clean": "node -e \"const fs=require('fs'); try { if(fs.existsSync('dist')) fs.rmSync('dist', {recursive:true, force:true, maxRetries:5, retryDelay:100}); } catch(e){}\"",
     "start": "node server/app.js",
     "dev": "node --watch server/app.js",
-    "export": "node bin/lectnote.js export"
+    "export": "node bin/lectnote.js export",
+    "icons": "node scripts/generate-icons.js",
+    "mcp": "node bin/lectnote-mcp.js",
+    "electron": "electron .",
+    "electron:dev": "electron .",
+    "electron:pack": "npm run clean && electron-builder --dir",
+    "electron:build": "npm run clean && electron-builder",
+    "electron:build:mac": "npm run clean && electron-builder --mac",
+    "electron:build:win": "npm run clean && electron-builder --win",
+    "electron:build:linux": "npm run clean && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.lectnote.studio",
+    "productName": "LectNote Studio",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "server/**/*",
+      "web/**/*",
+      "package.json",
+      "!lectures/**/*",
+      "!chrome/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.education",
+      "icon": "build/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "asar": true,
+    "asarUnpack": [
+      "**/puppeteer/**"
+    ]
   },
   "keywords": [
     "lecture-notes",
@@ -18,16 +72,31 @@
     "markdown",
     "pdf-export",
     "puppeteer",
-    "stem"
+    "stem",
+    "electron"
   ],
-  "author": "",
+  "author": "Berikai <berkayeren2009@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Berikai/lectnote.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Berikai/lectnote/issues"
+  },
+  "homepage": "https://github.com/Berikai/lectnote#readme",
   "license": "MIT",
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "highlight.js": "^11.12.0",
+    "katex": "^0.19.0",
     "markdown-it": "^14.1.0",
     "multer": "^1.4.5-lts.1",
-    "puppeteer": "^23.4.0",
+    "puppeteer": "^25.13.0",
     "rough-notation": "^0.5.1"
+  },
+  "devDependencies": {
+    "electron": "^44.7.0",
+    "electron-builder": "^26.5.0"
   }
 }
