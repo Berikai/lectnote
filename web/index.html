@@ -422,7 +422,73 @@
           <div id="preview-content" class="content-body">
             <!-- Rendered content injected here -->
           </div>
+
+          <!-- Non-destructive Annotations Layer (Drawings & Sticky Notes) -->
+          <div id="preview-annotations-layer" class="preview-annotations-layer">
+            <svg id="drawing-svg-canvas" class="drawing-svg-canvas" xmlns="http://www.w3.org/2000/svg">
+              <g id="drawing-strokes-group"></g>
+              <path id="drawing-active-stroke" class="drawing-active-stroke" d="" />
+            </svg>
+            <div id="sticky-notes-container" class="sticky-notes-container"></div>
+          </div>
         </article>
+      </div>
+
+      <!-- Floating Annotations & Drawing Toolbar -->
+      <div class="preview-annotations-toolbar" id="preview-annotations-toolbar" role="toolbar" aria-label="Annotation & Drawing Tools">
+        <div class="annotation-tool-group">
+          <button type="button" class="anno-btn active" data-tool="select" id="btn-tool-select" title="Select & Drag Mode (V)" aria-label="Select Tool">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 3 7 18 3-7 7-3L3 3z"/></svg>
+          </button>
+          <button type="button" class="anno-btn" data-tool="pen" id="btn-tool-pen" title="Pen Drawing (P)" aria-label="Pen Tool">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+          </button>
+          <button type="button" class="anno-btn" data-tool="highlighter" id="btn-tool-highlighter" title="Highlighter (H)" aria-label="Highlighter Tool">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h3l6-6"/><path d="m22 7-4.5-4.5a2.1 2.1 0 0 0-3 0L3 14l7 7L21.5 9.5a2.1 2.1 0 0 0 0-3Z"/></svg>
+          </button>
+          <button type="button" class="anno-btn" data-tool="eraser" id="btn-tool-eraser" title="Eraser (E)" aria-label="Eraser Tool">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
+          </button>
+          <button type="button" class="anno-btn" id="btn-tool-sticky" title="Add Sticky Note (N)" aria-label="Add Sticky Note">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"/><path d="M15 3v5h6"/></svg>
+          </button>
+        </div>
+
+        <div class="anno-divider"></div>
+
+        <div class="annotation-palette-group" id="annotation-palette-group">
+          <button type="button" class="anno-color-btn active" data-color="#e11d48" style="--swatch-color: #e11d48;" title="Crimson Ink"></button>
+          <button type="button" class="anno-color-btn" data-color="#2563eb" style="--swatch-color: #2563eb;" title="Blue Ink"></button>
+          <button type="button" class="anno-color-btn" data-color="#16a34a" style="--swatch-color: #16a34a;" title="Green Ink"></button>
+          <button type="button" class="anno-color-btn" data-color="#d97706" style="--swatch-color: #d97706;" title="Amber Ink"></button>
+          <button type="button" class="anno-color-btn" data-color="#1e293b" style="--swatch-color: #1e293b;" title="Charcoal Ink"></button>
+        </div>
+
+        <div class="anno-divider"></div>
+
+        <div class="annotation-size-group">
+          <button type="button" class="anno-btn anno-size-btn" id="btn-anno-size" title="Cycle Stroke Thickness">
+            <span class="anno-size-indicator" id="anno-size-indicator"></span>
+          </button>
+        </div>
+
+        <div class="anno-divider"></div>
+
+        <div class="annotation-action-group">
+          <button type="button" class="anno-btn" id="btn-anno-undo" title="Undo (Cmd+Z / Ctrl+Z)" aria-label="Undo">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+          </button>
+          <button type="button" class="anno-btn" id="btn-anno-redo" title="Redo (Cmd+Shift+Z / Ctrl+Y)" aria-label="Redo">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+          </button>
+          <button type="button" class="anno-btn" id="btn-anno-visibility" title="Toggle Annotations Visibility" aria-label="Toggle Visibility">
+            <svg class="ui-icon icon-eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="ui-icon icon-eye-closed" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+          <button type="button" class="anno-btn" id="btn-anno-clear" title="Clear All Annotations" aria-label="Clear All">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
       </div>
 
       <!-- Floating Preview Zoom Toolbar -->
@@ -1053,6 +1119,7 @@
   <script src="/scripts/ingestion-modal.js"></script>
   <script src="/scripts/settings-modal.js"></script>
   <script src="/scripts/assistant.js"></script>
+  <script src="/scripts/annotations.js"></script>
   <script src="/scripts/app.js"></script>
 </body>
 </html>

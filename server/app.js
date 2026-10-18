@@ -369,12 +369,19 @@ app.get('/api/lectures/:course/:lecture', (req, res) => {
     const { fullPath: lectureDir, safeCourse, safeLecture } = getSafeLecturePath(course, lecture);
     const mdPath = path.join(lectureDir, 'notes.md');
     const photosDir = path.join(lectureDir, 'photos');
+    const annoPath = path.join(lectureDir, 'annotations.json');
 
     if (!fs.existsSync(lectureDir)) {
       return res.status(404).json({ error: 'Lecture not found' });
     }
 
     const markdown = fs.existsSync(mdPath) ? fs.readFileSync(mdPath, 'utf8') : '';
+    let annotations = { version: 1, stickies: [], drawings: [] };
+    if (fs.existsSync(annoPath)) {
+      try {
+        annotations = JSON.parse(fs.readFileSync(annoPath, 'utf8'));
+      } catch (_) {}
+    }
     const photos = fs.existsSync(photosDir)
       ? fs.readdirSync(photosDir).filter(f => !f.startsWith('.'))
       : [];
@@ -383,6 +390,7 @@ app.get('/api/lectures/:course/:lecture', (req, res) => {
       course: safeCourse,
       lecture: safeLecture,
       markdown,
+      annotations,
       photos
     });
   } catch (err) {
@@ -406,6 +414,64 @@ app.put('/api/lectures/:course/:lecture', (req, res) => {
 
     fs.writeFileSync(mdPath, markdown || '', 'utf8');
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * 4d. Get lecture annotations (sticky notes & freehand drawings)
+ */
+app.get('/api/lectures/:course/:lecture/annotations', (req, res) => {
+  try {
+    const { course, lecture } = req.params;
+    const { fullPath: lectureDir, safeCourse, safeLecture } = getSafeLecturePath(course, lecture);
+    const annoPath = path.join(lectureDir, 'annotations.json');
+
+    if (!fs.existsSync(lectureDir)) {
+      return res.status(404).json({ error: 'Lecture not found' });
+    }
+
+    let annotations = { version: 1, stickies: [], drawings: [] };
+    if (fs.existsSync(annoPath)) {
+      try {
+        annotations = JSON.parse(fs.readFileSync(annoPath, 'utf8'));
+      } catch (_) {}
+    }
+
+    res.json({
+      course: safeCourse,
+      lecture: safeLecture,
+      annotations
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * 4e. Update lecture annotations (sticky notes & freehand drawings)
+ */
+app.put('/api/lectures/:course/:lecture/annotations', (req, res) => {
+  try {
+    const { course, lecture } = req.params;
+    const { fullPath: lectureDir, safeCourse, safeLecture } = getSafeLecturePath(course, lecture);
+    const annoPath = path.join(lectureDir, 'annotations.json');
+
+    if (!fs.existsSync(lectureDir)) {
+      fs.mkdirSync(lectureDir, { recursive: true });
+    }
+
+    const { annotations } = req.body;
+    const dataToSave = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      stickies: Array.isArray(annotations?.stickies) ? annotations.stickies : [],
+      drawings: Array.isArray(annotations?.drawings) ? annotations.drawings : []
+    };
+
+    fs.writeFileSync(annoPath, JSON.stringify(dataToSave, null, 2), 'utf8');
+    res.json({ success: true, course: safeCourse, lecture: safeLecture, annotations: dataToSave });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -758,12 +824,19 @@ app.get('/api/lectures/:course/:lecture/render', (req, res) => {
     const theme = req.query.theme || 'notebook'; // 'notebook' or 'academic'
     const { fullPath: lectureDir, safeCourse, safeLecture } = getSafeLecturePath(course, lecture);
     const mdPath = path.join(lectureDir, 'notes.md');
+    const annoPath = path.join(lectureDir, 'annotations.json');
 
     if (!fs.existsSync(mdPath)) {
       return res.status(404).send('Notes not found');
     }
 
     const markdown = fs.readFileSync(mdPath, 'utf8');
+    let annotations = null;
+    if (fs.existsSync(annoPath)) {
+      try {
+        annotations = JSON.parse(fs.readFileSync(annoPath, 'utf8'));
+      } catch (_) {}
+    }
     const parser = createMarkdownParser();
     const renderedBody = parser.render(markdown, { course: safeCourse, lecture: safeLecture });
 
@@ -775,7 +848,8 @@ app.get('/api/lectures/:course/:lecture/render', (req, res) => {
       renderedBody,
       theme,
       course: safeCourse,
-      lecture: safeLecture
+      lecture: safeLecture,
+      annotations
     });
 
     res.send(html);
@@ -949,10 +1023,68 @@ app.post('/api/settings/test-ai', async (req, res) => {
 /**
  * Standalone HTML Generator helper
  */
-function generateStandaloneHtml({ title, renderedBody, theme, course, lecture }) {
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function generateStandaloneHtml({ title, renderedBody, theme, course, lecture, annotations }) {
   const isAcademic = theme === 'academic';
   const displayCourse = (course || '').replace(/[-_]/g, ' ');
   const displayLecture = (lecture || '').replace(/[-_]/g, ' ');
+
+  let annotationsHtml = '';
+  if (annotations && (
+    (Array.isArray(annotations.drawings) && annotations.drawings.length > 0) ||
+    (Array.isArray(annotations.stickies) && annotations.stickies.length > 0)
+  )) {
+    const drawings = Array.isArray(annotations.drawings) ? annotations.drawings : [];
+    const stickies = Array.isArray(annotations.stickies) ? annotations.stickies : [];
+
+    const pathElements = drawings.map(d => {
+      if (!d.path) return '';
+      const strokeColor = escapeHtml(d.color || '#e11d48');
+      const strokeWidth = d.size || 2.5;
+      const opacity = typeof d.opacity === 'number' ? d.opacity : (d.tool === 'highlighter' ? 0.45 : 1.0);
+      const blend = d.tool === 'highlighter' ? 'mix-blend-mode: multiply;' : '';
+      return `<path d="${escapeHtml(d.path)}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="${opacity}" style="${blend}" />`;
+    }).join('\n');
+
+    const stickyElements = stickies.map(s => {
+      const color = escapeHtml(s.color || 'yellow');
+      const x = typeof s.x === 'number' ? s.x : 100;
+      const y = typeof s.y === 'number' ? s.y : 100;
+      const w = typeof s.width === 'number' ? s.width : 200;
+      const h = typeof s.height === 'number' ? s.height : 160;
+      const text = escapeHtml(s.text || '');
+      return `
+        <div class="floating-sticky-note sticky-color-${color}" style="left: ${x}px; top: ${y}px; width: ${w}px; min-height: ${h}px;">
+          <div class="sticky-note-header">
+            <span class="sticky-pin-icon">📌</span>
+            <span class="sticky-note-title">Note</span>
+          </div>
+          <div class="sticky-note-content">${text}</div>
+        </div>`;
+    }).join('\n');
+
+    annotationsHtml = `
+      <div id="preview-annotations-layer" class="preview-annotations-layer standalone-annotations">
+        <svg id="drawing-svg-canvas" class="drawing-svg-canvas" xmlns="http://www.w3.org/2000/svg">
+          <g id="drawing-strokes-group">
+            ${pathElements}
+          </g>
+        </svg>
+        <div id="sticky-notes-container" class="sticky-notes-container">
+          ${stickyElements}
+        </div>
+      </div>
+    `;
+  }
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -980,7 +1112,8 @@ function generateStandaloneHtml({ title, renderedBody, theme, course, lecture })
   <!-- Highlight.js Syntax Theme -->
   <link rel="stylesheet" href="/vendor/highlight-github.min.css">
 
-  <!-- Theme CSS -->
+  <!-- Main & Theme CSS -->
+  <link rel="stylesheet" href="/styles/main.css">
   <link rel="stylesheet" href="/styles/theme-${isAcademic ? 'academic' : 'notebook'}.css">
 </head>
 <body class="theme-${theme}">
@@ -993,6 +1126,8 @@ function generateStandaloneHtml({ title, renderedBody, theme, course, lecture })
     <div id="render-content" class="content-body">
       ${renderedBody}
     </div>
+
+    ${annotationsHtml}
   </main>
 
   <script>

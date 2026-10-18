@@ -135,6 +135,7 @@ window.LectNoteApp = (function() {
     window.LectNotePhotoDrawer.init();
     window.LectNoteIngestion.init();
     if (window.LectNoteAssistant) window.LectNoteAssistant.init();
+    if (window.LectNoteAnnotations) window.LectNoteAnnotations.init();
     initSidebar();
 
     // 2. Setup theme, color mode & view mode
@@ -972,6 +973,9 @@ window.LectNoteApp = (function() {
       if (window.LectNoteAssistant) {
         window.LectNoteAssistant.setWorkspace(course, lecture);
       }
+      if (window.LectNoteAnnotations) {
+        window.LectNoteAnnotations.loadAnnotations(course, lecture, data.annotations);
+      }
 
       await window.LectNotePreview.updatePreview(data.markdown, course, lecture, true);
 
@@ -1083,6 +1087,9 @@ window.LectNoteApp = (function() {
 
     if (isAutoSave && window.LectNoteEditor && typeof window.LectNoteEditor.markSaving === 'function') {
       window.LectNoteEditor.markSaving();
+    }
+    if (window.LectNoteAnnotations) {
+      window.LectNoteAnnotations.saveAnnotations(true);
     }
 
     try {

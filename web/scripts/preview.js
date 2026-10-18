@@ -1287,7 +1287,10 @@ window.LectNotePreview = (function() {
 
     function isInteractiveTarget(el) {
       if (!el) return false;
-      return !!el.closest('button, a, input, textarea, select, .preview-zoom-toolbar, .btn-inspect-board, [role="button"]');
+      if (window.LectNoteAnnotations && typeof window.LectNoteAnnotations.isDrawingActive === 'function' && window.LectNoteAnnotations.isDrawingActive()) {
+        return true;
+      }
+      return !!el.closest('button, a, input, textarea, select, .preview-zoom-toolbar, .preview-annotations-toolbar, .sticky-note, .drawing-svg-canvas, .btn-inspect-board, [role="button"]');
     }
 
     window.addEventListener('dragstart', (e) => {
