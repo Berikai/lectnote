@@ -23,7 +23,7 @@
   <script defer src="/vendor/katex/contrib/auto-render.min.js"></script>
 
   <!-- Rough Notation -->
-  <script src="/vendor/rough-notation.iife.js"></script>
+  <script src="/vendor/rough-notation.iife.js?v=1.0.1"></script>
 
   <!-- Mermaid (Offline local vendor) -->
   <script src="/vendor/mermaid.min.js"></script>
@@ -423,6 +423,25 @@
             <!-- Rendered content injected here -->
           </div>
         </article>
+      </div>
+
+      <!-- Floating Preview Zoom Toolbar -->
+      <div class="preview-zoom-toolbar" id="preview-zoom-toolbar" role="toolbar" aria-label="Preview zoom controls">
+        <button type="button" id="btn-preview-zoom-out" class="preview-zoom-btn" title="Zoom Out (Cmd - / Ctrl -)" aria-label="Zoom Out">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button type="button" id="btn-preview-zoom-reset" class="preview-zoom-btn preview-zoom-level-btn" title="Click to reset zoom to 100% (Cmd 0 / Ctrl 0)" aria-label="Reset Zoom">
+          <span id="preview-zoom-text">100%</span>
+        </button>
+        <button type="button" id="btn-preview-zoom-in" class="preview-zoom-btn" title="Zoom In (Cmd + / Ctrl +)" aria-label="Zoom In">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button type="button" id="btn-preview-zoom-fit" class="preview-zoom-btn preview-zoom-fit-btn" title="Fit to width" aria-label="Fit to Width">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
+        <button type="button" id="btn-preview-pan" class="preview-zoom-btn preview-pan-btn" title="Toggle Pan Mode (Drag to move canvas horizontally &amp; vertically)" aria-label="Toggle Pan Tool">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+        </button>
       </div>
     </section>
 
@@ -1028,7 +1047,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Client-side Scripts -->
-  <script src="/scripts/preview.js"></script>
+  <script src="/scripts/preview.js?v=1.0.1"></script>
   <script src="/scripts/editor.js"></script>
   <script src="/scripts/photo-drawer.js"></script>
   <script src="/scripts/ingestion-modal.js"></script>

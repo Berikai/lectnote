@@ -9,7 +9,10 @@ window.LectNoteApp = (function() {
   let currentLecture = localStorage.getItem('lectnote_selected_lecture') || '';
   let currentTheme = localStorage.getItem('lectnote_theme') || 'notebook'; // 'notebook' or 'academic'
   let currentColorMode = localStorage.getItem('lectnote_color_mode') || 'light'; // 'light' or 'dark'
-  let currentView = 'split'; // 'split', 'editor', 'preview'
+  const VALID_VIEW_MODES = ['split', 'editor', 'preview'];
+  const savedViewMode = localStorage.getItem('lectnote_view_mode') || localStorage.getItem('lectnote_view');
+  let currentView = VALID_VIEW_MODES.includes(savedViewMode) ? savedViewMode : 'split';
+  let userSelectedView = currentView;
 
   const courseSelect = document.getElementById('course-select');
   const overflowCourseSelect = document.getElementById('overflow-course-select');
@@ -78,6 +81,14 @@ window.LectNoteApp = (function() {
             if (Array.isArray(initialDesktopSettings.collapsedCourses)) {
               collapsedCourses = new Set(initialDesktopSettings.collapsedCourses);
             }
+            const desktopView = initialDesktopSettings.viewMode || initialDesktopSettings.lastView || initialDesktopSettings.view;
+            if (desktopView && VALID_VIEW_MODES.includes(desktopView)) {
+              currentView = desktopView;
+              userSelectedView = desktopView;
+            }
+            if (typeof initialDesktopSettings.previewZoom === 'number' && window.LectNotePreview?.setZoom) {
+              window.LectNotePreview.setZoom(initialDesktopSettings.previewZoom, null, false);
+            }
           }
         } catch (_) {}
       }
@@ -98,6 +109,16 @@ window.LectNoteApp = (function() {
       }
     }
 
+    // Explicit URL query parameter override for view mode (?view=split|editor|preview)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramView = urlParams.get('view') || urlParams.get('viewMode');
+      if (paramView && VALID_VIEW_MODES.includes(paramView)) {
+        currentView = paramView;
+        userSelectedView = paramView;
+      }
+    } catch (_) {}
+
     // Standard CSS display-mode media query synchronization (works across Electron & browsers)
     if (window.matchMedia) {
       const fsQuery = window.matchMedia('(display-mode: fullscreen)');
@@ -116,9 +137,10 @@ window.LectNoteApp = (function() {
     if (window.LectNoteAssistant) window.LectNoteAssistant.init();
     initSidebar();
 
-    // 2. Setup theme & color mode
+    // 2. Setup theme, color mode & view mode
     applyTheme(currentTheme, false);
     applyColorMode(currentColorMode);
+    applyViewMode(currentView, false);
 
     // 3. Setup event listeners & scroll sync
     setupEventListeners();
@@ -201,6 +223,10 @@ window.LectNoteApp = (function() {
         }
         switchToLecture(c, l);
       }
+      const v = urlParams.get('view') || urlParams.get('viewMode');
+      if (v && VALID_VIEW_MODES.includes(v) && v !== currentView) {
+        applyViewMode(v, false);
+      }
     });
 
     // Theme Toggle (Notebook vs Academic)
@@ -221,9 +247,7 @@ window.LectNoteApp = (function() {
     // View segmentation (Split / Editor / Preview)
     document.querySelectorAll('.view-segmented-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.view-segmented-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        applyViewMode(btn.dataset.view);
+        applyViewMode(btn.dataset.view, true);
       });
     });
 
@@ -311,6 +335,20 @@ window.LectNoteApp = (function() {
           exportPdf();
         } else if (action === 'print-view') {
           openPrintView();
+        } else if (action === 'view-split') {
+          applyViewMode('split', true);
+        } else if (action === 'view-editor') {
+          applyViewMode('editor', true);
+        } else if (action === 'view-preview') {
+          applyViewMode('preview', true);
+        } else if (action === 'preview-zoom-in') {
+          window.LectNotePreview?.zoomIn();
+        } else if (action === 'preview-zoom-out') {
+          window.LectNotePreview?.zoomOut();
+        } else if (action === 'preview-zoom-reset') {
+          window.LectNotePreview?.resetZoom();
+        } else if (action === 'preview-zoom-fit') {
+          window.LectNotePreview?.fitToWidth();
         }
       });
     }
@@ -708,11 +746,15 @@ window.LectNoteApp = (function() {
 
   function handleResponsiveLayout() {
     // If screen is mobile-sized (<= 640px) and view is currently 'split', auto-switch to 'preview'
-    if (window.innerWidth <= 640 && currentView === 'split') {
-      applyViewMode('preview');
-      document.querySelectorAll('.view-segmented-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.view === 'preview');
-      });
+    if (window.innerWidth <= 640) {
+      if (currentView === 'split') {
+        applyViewMode('preview', false);
+      }
+    } else {
+      // If returning to desktop-sized (> 640px) and user's saved preference was 'split'
+      if (userSelectedView === 'split' && currentView !== 'split') {
+        applyViewMode('split', false);
+      }
     }
   }
 
@@ -784,22 +826,41 @@ window.LectNoteApp = (function() {
     }
   }
 
-  function applyViewMode(mode) {
+  function applyViewMode(mode, persist = true) {
+    if (!VALID_VIEW_MODES.includes(mode)) {
+      mode = 'split';
+    }
     currentView = mode;
-    if (mode === 'editor') {
-      paneEditor.style.display = 'flex';
-      panePreview.style.display = 'none';
-    } else if (mode === 'preview') {
-      paneEditor.style.display = 'none';
-      panePreview.style.display = 'flex';
-    } else {
-      paneEditor.style.display = 'flex';
-      panePreview.style.display = 'flex';
-      // When entering split view, scroll preview to current editing section
-      if (editorTextarea && window.LectNotePreview && typeof window.LectNotePreview.scrollToLine === 'function') {
-        const selStart = editorTextarea.selectionStart || 0;
-        const lineIdx = editorTextarea.value.substring(0, selStart).split('\n').length - 1;
-        window.LectNotePreview.scrollToLine(lineIdx, false);
+
+    if (persist) {
+      userSelectedView = mode;
+      localStorage.setItem('lectnote_view_mode', mode);
+      localStorage.setItem('lectnote_view', mode);
+      if (isElectron && window.lectnoteDesktop?.saveSettings) {
+        window.lectnoteDesktop.saveSettings({ viewMode: mode, lastView: mode }).catch(() => {});
+      }
+    }
+
+    document.querySelectorAll('.view-segmented-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.view === mode);
+    });
+
+    if (paneEditor && panePreview) {
+      if (mode === 'editor') {
+        paneEditor.style.display = 'flex';
+        panePreview.style.display = 'none';
+      } else if (mode === 'preview') {
+        paneEditor.style.display = 'none';
+        panePreview.style.display = 'flex';
+      } else {
+        paneEditor.style.display = 'flex';
+        panePreview.style.display = 'flex';
+        // When entering split view, scroll preview to current editing section
+        if (editorTextarea && window.LectNotePreview && typeof window.LectNotePreview.scrollToLine === 'function') {
+          const selStart = editorTextarea.selectionStart || 0;
+          const lineIdx = editorTextarea.value.substring(0, selStart).split('\n').length - 1;
+          window.LectNotePreview.scrollToLine(lineIdx, false);
+        }
       }
     }
   }
@@ -1749,7 +1810,10 @@ window.LectNoteApp = (function() {
     switchToLecture,
     loadCourses,
     openSettings: openSettingsModal,
-    showToast
+    showToast,
+    getViewMode: () => currentView,
+    setViewMode: (mode) => applyViewMode(mode, true),
+    applyViewMode
   };
 })();
 

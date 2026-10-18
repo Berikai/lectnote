@@ -1175,7 +1175,7 @@ body.mode-dark .editor-gutter-line.search-gutter-highlight {
   display: flex;
   flex-direction: column;
   background: var(--bg-canvas);
-  overflow-y: auto;
+  overflow: hidden;
   position: relative;
 }
 
@@ -1389,12 +1389,13 @@ body.mode-dark .editor-gutter-line.search-gutter-highlight {
    ========================================================================== */
 .preview-scroll-container {
   flex: 1;
-  overflow-y: auto;
+  overflow: auto;
   padding: 30px 24px;
   background-color: var(--bg-canvas);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: safe center;
+  touch-action: pan-x pan-y pinch-zoom;
 }
 
 /* --- PRESERVED UNTOUCHED LECTURE PREVIEW PAPER STYLES --- */
@@ -1402,6 +1403,152 @@ body.mode-dark .editor-gutter-line.search-gutter-highlight {
   width: 100%;
   max-width: 860px;
   box-shadow: var(--shadow-paper);
+  transform-origin: top center;
+  flex-shrink: 0;
+}
+
+.preview-scroll-container.is-zoomed {
+  align-items: flex-start;
+}
+
+.preview-scroll-container.is-zoomed .notebook-paper,
+.preview-scroll-container.is-zoomed .academic-paper {
+  width: 860px;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ==========================================================================
+   Preview Zoom Toolbar (Floating Pill Controls)
+   ========================================================================== */
+.preview-zoom-toolbar {
+  position: absolute;
+  bottom: 18px;
+  right: 22px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 9999px;
+  padding: 3px 5px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  user-select: none;
+  -webkit-user-select: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0.88;
+  transition: opacity 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.preview-zoom-toolbar:hover,
+.preview-zoom-toolbar:focus-within {
+  opacity: 1;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.preview-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 6px;
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+}
+
+.preview-zoom-btn:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+  color: var(--primary);
+}
+
+.preview-zoom-btn:active:not(:disabled) {
+  transform: scale(0.93);
+}
+
+.preview-zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.preview-zoom-level-btn {
+  min-width: 44px;
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.preview-zoom-btn .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.preview-zoom-btn.active,
+.preview-pan-btn.active {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+/* Pan / Drag Modes */
+.preview-scroll-container.can-pan {
+  cursor: default;
+}
+
+.preview-scroll-container.pan-active,
+.preview-scroll-container.space-pan {
+  cursor: grab !important;
+}
+
+.preview-scroll-container.pan-active *,
+.preview-scroll-container.space-pan * {
+  cursor: grab !important;
+}
+
+body.is-preview-panning,
+body.is-preview-panning *,
+.preview-scroll-container.is-panning,
+.preview-scroll-container.is-panning * {
+  cursor: grabbing !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+@media (max-width: 640px) {
+  .preview-zoom-toolbar {
+    bottom: 12px;
+    right: 12px;
+    padding: 2px 4px;
+  }
+  .preview-zoom-btn {
+    height: 26px;
+    min-width: 26px;
+    font-size: 10px;
+  }
+  .preview-zoom-level-btn {
+    min-width: 38px;
+    padding: 0 4px;
+  }
+}
+
+@media print {
+  .preview-zoom-toolbar {
+    display: none !important;
+  }
+  #preview-paper {
+    zoom: 1 !important;
+    transform: none !important;
+  }
 }
 
 .preview-scroll-container img,

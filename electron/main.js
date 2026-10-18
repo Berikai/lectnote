@@ -189,6 +189,8 @@ async function createWindow() {
   const query = new URLSearchParams();
   if (settings.lastCourse) query.set('course', settings.lastCourse);
   if (settings.lastLecture) query.set('lecture', settings.lastLecture);
+  const lastView = settings.viewMode || settings.lastView;
+  if (lastView) query.set('view', lastView);
   const queryString = query.toString() ? `?${query.toString()}` : '';
   await mainWindow.loadURL(`http://localhost:${serverPort}${queryString}`);
 }
@@ -291,7 +293,39 @@ function buildAppMenu() {
         { role: 'zoomIn' },
         { role: 'zoomOut' },
         { type: 'separator' },
-        { role: 'togglefullscreen' }
+        { role: 'togglefullscreen' },
+        { type: 'separator' },
+        {
+          label: 'Split View',
+          accelerator: 'CmdOrCtrl+1',
+          click: () => mainWindow?.webContents.send('menu:action', 'view-split')
+        },
+        {
+          label: 'Editor Only',
+          accelerator: 'CmdOrCtrl+2',
+          click: () => mainWindow?.webContents.send('menu:action', 'view-editor')
+        },
+        {
+          label: 'Preview Only',
+          accelerator: 'CmdOrCtrl+3',
+          click: () => mainWindow?.webContents.send('menu:action', 'view-preview')
+        },
+        { type: 'separator' },
+        {
+          label: 'Zoom In Preview',
+          accelerator: 'CmdOrCtrl+Shift+=',
+          click: () => mainWindow?.webContents.send('menu:action', 'preview-zoom-in')
+        },
+        {
+          label: 'Zoom Out Preview',
+          accelerator: 'CmdOrCtrl+Shift+-',
+          click: () => mainWindow?.webContents.send('menu:action', 'preview-zoom-out')
+        },
+        {
+          label: 'Reset Preview Zoom',
+          accelerator: 'CmdOrCtrl+Shift+0',
+          click: () => mainWindow?.webContents.send('menu:action', 'preview-zoom-reset')
+        }
       ]
     },
     {

@@ -9,10 +9,81 @@ window.LectNotePreview = (function() {
   let refreshTimer = null;
   let resizeObserver = null;
 
-  function refreshAnnotations() {
+  function patchRoughNotationZoom() {
+    if (!window.RoughNotation) return;
+    try {
+      const dummy = document.createElement('span');
+      const anno = window.RoughNotation.annotate(dummy, { type: 'underline' });
+      const proto = Object.getPrototypeOf(anno);
+      if (proto && !proto._zoomPatched) {
+        proto._zoomPatched = true;
+        proto.svgRect = function(t, e) {
+          const s = t.getBoundingClientRect(), i = e;
+          let scaleX = 1, scaleY = 1;
+
+          // 1. Ratio of SVG rendered bounding rect to its declared layout size (100px)
+          try {
+            const baseW = parseFloat(t.style.width) || 100;
+            const baseH = parseFloat(t.style.height) || 100;
+            if (s && s.width > 0 && baseW > 0) {
+              const rx = s.width / baseW;
+              const ry = s.height / baseH;
+              if (Math.abs(rx - 1) > 0.002) scaleX = rx;
+              if (Math.abs(ry - 1) > 0.002) scaleY = ry;
+            }
+          } catch (_) {}
+
+          // 2. Fallback to getScreenCTM() if scale wasn't found from bounding rect
+          if (Math.abs(scaleX - 1) <= 0.002) {
+            try {
+              const ctm = t.getScreenCTM();
+              if (ctm && ctm.a && Math.abs(ctm.a - 1) > 0.002) {
+                scaleX = ctm.a;
+                scaleY = ctm.d || ctm.a;
+              }
+            } catch (_) {}
+          }
+
+          // 3. Fallback to container zoom or preview engine current zoom
+          if (Math.abs(scaleX - 1) <= 0.002) {
+            try {
+              const paper = t.closest('#preview-paper') || document.getElementById('preview-paper');
+              const pZoom = paper ? parseFloat(paper.style.zoom) : NaN;
+              if (!isNaN(pZoom) && pZoom > 0 && Math.abs(pZoom - 1) > 0.002) {
+                scaleX = pZoom;
+                scaleY = pZoom;
+              } else if (typeof currentZoom === 'number' && currentZoom > 0 && Math.abs(currentZoom - 1) > 0.002) {
+                scaleX = currentZoom;
+                scaleY = currentZoom;
+              } else if (window.LectNotePreview && typeof window.LectNotePreview.getZoom === 'function') {
+                const lz = window.LectNotePreview.getZoom();
+                if (lz > 0 && Math.abs(lz - 1) > 0.002) {
+                  scaleX = lz;
+                  scaleY = lz;
+                }
+              }
+            } catch (_) {}
+          }
+
+          return {
+            x: ((i.x || i.left) - (s.x || s.left)) / scaleX,
+            y: ((i.y || i.top) - (s.y || s.top)) / scaleY,
+            w: i.width / scaleX,
+            h: i.height / scaleY
+          };
+        };
+      }
+      try { anno.remove(); } catch (_) {}
+    } catch (_) {}
+  }
+
+  // Attempt initial patch if RoughNotation is already loaded
+  patchRoughNotationZoom();
+
+  function refreshAnnotations(immediate = false) {
     if (!activeAnnotations || activeAnnotations.length === 0) return;
     if (refreshTimer) clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(() => {
+    const doRefresh = () => {
       activeAnnotations.forEach(a => {
         try {
           if (a && typeof a.show === 'function') {
@@ -20,7 +91,12 @@ window.LectNotePreview = (function() {
           }
         } catch (err) {}
       });
-    }, 40);
+    };
+    if (immediate) {
+      doRefresh();
+    } else {
+      refreshTimer = setTimeout(doRefresh, 30);
+    }
   }
 
   function fitDisplayMath(container) {
@@ -838,6 +914,7 @@ window.LectNotePreview = (function() {
 
       // 8. Draw Rough Notation Annotations
       if (window.RoughNotation) {
+        patchRoughNotationZoom();
         const elements = container.querySelectorAll('[data-rn]');
         const group = [];
 
@@ -896,11 +973,426 @@ window.LectNotePreview = (function() {
     }
   }
 
+  // ==========================================================================
+  // Preview Zoom & Touchpad Gesture System
+  // ==========================================================================
+  const MIN_ZOOM = 0.5;   // 50%
+  const MAX_ZOOM = 3.0;   // 300%
+  const DEFAULT_ZOOM = 1.0;
+  const ZOOM_PRESETS = [0.5, 0.67, 0.75, 0.85, 1.0, 1.15, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0];
+
+  let currentZoom = DEFAULT_ZOOM;
+  let saveZoomTimer = null;
+  let zoomRefreshTimer = null;
+  let zoomInitialized = false;
+
+  function resolveInitialZoom() {
+    try {
+      const saved = parseFloat(localStorage.getItem('lectnote_preview_zoom'));
+      if (!isNaN(saved) && saved >= MIN_ZOOM && saved <= MAX_ZOOM) {
+        return Math.round(saved * 100) / 100;
+      }
+    } catch (_) {}
+    return DEFAULT_ZOOM;
+  }
+
+  function saveZoomState(zoom) {
+    if (saveZoomTimer) clearTimeout(saveZoomTimer);
+    saveZoomTimer = setTimeout(() => {
+      try {
+        localStorage.setItem('lectnote_preview_zoom', zoom.toString());
+        if (window.lectnoteDesktop?.saveSettings) {
+          window.lectnoteDesktop.saveSettings({ previewZoom: zoom }).catch(() => {});
+        }
+      } catch (_) {}
+    }, 150);
+  }
+
+  function applyZoom(targetZoom, focalPoint = null, persist = true, immediateRefresh = false) {
+    const paper = document.getElementById('preview-paper');
+    const scrollContainer = document.querySelector('.preview-scroll-container');
+    if (!paper) return currentZoom;
+
+    const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(targetZoom * 100) / 100));
+    const oldZoom = currentZoom;
+    currentZoom = clamped;
+
+    if (scrollContainer) {
+      let targetEl = null;
+      let offsetFromElX = 0;
+      let offsetFromElY = 0;
+      let focalX = 0;
+      let focalY = 0;
+
+      const cRect = scrollContainer.getBoundingClientRect();
+      if (focalPoint && typeof focalPoint.x === 'number' && typeof focalPoint.y === 'number') {
+        focalX = focalPoint.x;
+        focalY = focalPoint.y;
+      } else {
+        focalX = cRect.left + cRect.width / 2;
+        focalY = cRect.top + cRect.height / 2;
+      }
+
+      if (focalX >= cRect.left && focalX <= cRect.right && focalY >= cRect.top && focalY <= cRect.bottom) {
+        try {
+          targetEl = document.elementFromPoint(focalX, focalY);
+        } catch (_) {}
+      }
+      if (!targetEl || !paper.contains(targetEl)) {
+        targetEl = paper;
+      }
+
+      const beforeRect = targetEl.getBoundingClientRect();
+      offsetFromElX = focalX - beforeRect.left;
+      offsetFromElY = focalY - beforeRect.top;
+
+      paper.style.zoom = currentZoom;
+
+      const afterRect = targetEl.getBoundingClientRect();
+      const ratio = currentZoom / oldZoom;
+      const newPointX = afterRect.left + offsetFromElX * ratio;
+      const newPointY = afterRect.top + offsetFromElY * ratio;
+
+      const deltaX = newPointX - focalX;
+      const deltaY = newPointY - focalY;
+
+      if (Math.abs(deltaX) > 0.5) scrollContainer.scrollLeft += deltaX;
+      if (Math.abs(deltaY) > 0.5) scrollContainer.scrollTop += deltaY;
+
+      scrollContainer.classList.toggle('is-zoomed', currentZoom > 1.01);
+      scrollContainer.classList.toggle('can-pan', currentZoom > 1.01 || scrollContainer.scrollHeight > scrollContainer.clientHeight + 4 || scrollContainer.scrollWidth > scrollContainer.clientWidth + 4);
+    } else {
+      paper.style.zoom = currentZoom;
+    }
+
+    // Update UI controls
+    const textEl = document.getElementById('preview-zoom-text');
+    if (textEl) {
+      textEl.textContent = `${Math.round(currentZoom * 100)}%`;
+    }
+    const btnOut = document.getElementById('btn-preview-zoom-out');
+    const btnIn = document.getElementById('btn-preview-zoom-in');
+    if (btnOut) btnOut.disabled = currentZoom <= MIN_ZOOM + 0.001;
+    if (btnIn) btnIn.disabled = currentZoom >= MAX_ZOOM - 0.001;
+
+    if (persist) {
+      saveZoomState(currentZoom);
+    }
+
+    const container = document.getElementById('preview-content');
+    if (container) {
+      fitDisplayMath(container);
+      fitTables(container);
+    }
+    refreshAnnotations(immediateRefresh);
+
+    return currentZoom;
+  }
+
+  function zoomIn(step) {
+    if (typeof step === 'number') {
+      return applyZoom(currentZoom + step, null, true, true);
+    }
+    const next = ZOOM_PRESETS.find(p => p > currentZoom + 0.02);
+    const target = next !== undefined ? next : Math.min(MAX_ZOOM, currentZoom + 0.15);
+    return applyZoom(target, null, true, true);
+  }
+
+  function zoomOut(step) {
+    if (typeof step === 'number') {
+      return applyZoom(currentZoom - step, null, true, true);
+    }
+    const prev = [...ZOOM_PRESETS].reverse().find(p => p < currentZoom - 0.02);
+    const target = prev !== undefined ? prev : Math.max(MIN_ZOOM, currentZoom - 0.15);
+    return applyZoom(target, null, true, true);
+  }
+
+  function resetZoom() {
+    return applyZoom(DEFAULT_ZOOM, null, true, true);
+  }
+
+  function fitToWidth() {
+    const scrollContainer = document.querySelector('.preview-scroll-container');
+    const paper = document.getElementById('preview-paper');
+    if (!scrollContainer || !paper) return currentZoom;
+
+    const availWidth = scrollContainer.clientWidth - 56;
+    if (availWidth <= 0) return currentZoom;
+
+    const baseWidth = 860;
+    const targetZoom = Math.max(MIN_ZOOM, Math.min(2.0, availWidth / baseWidth));
+    return applyZoom(targetZoom, null, true, true);
+  }
+
+  function setupZoomEvents() {
+    if (zoomInitialized) return;
+    const scrollContainer = document.querySelector('.preview-scroll-container');
+    const panePreview = document.getElementById('pane-preview');
+    if (!scrollContainer || !panePreview) return;
+
+    zoomInitialized = true;
+    currentZoom = resolveInitialZoom();
+    applyZoom(currentZoom, null, false, true);
+
+    // Button event listeners
+    const btnOut = document.getElementById('btn-preview-zoom-out');
+    const btnIn = document.getElementById('btn-preview-zoom-in');
+    const btnReset = document.getElementById('btn-preview-zoom-reset');
+    const btnFit = document.getElementById('btn-preview-zoom-fit');
+
+    if (btnOut) btnOut.addEventListener('click', () => zoomOut());
+    if (btnIn) btnIn.addEventListener('click', () => zoomIn());
+    if (btnReset) btnReset.addEventListener('click', () => resetZoom());
+    if (btnFit) btnFit.addEventListener('click', () => fitToWidth());
+
+    // 1. Touchpad Pinch-to-Zoom (macOS/Windows Precision Touchpads via wheel with ctrlKey)
+    // and Cmd/Ctrl + Mouse Wheel Zoom
+    const handleWheel = (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+
+        // deltaY < 0 is pinch-out / zooming in
+        // deltaY > 0 is pinch-in / zooming out
+        const factor = Math.exp(-e.deltaY * 0.006);
+        const targetZoom = currentZoom * factor;
+        applyZoom(targetZoom, { x: e.clientX, y: e.clientY }, true, false);
+      }
+    };
+    scrollContainer.addEventListener('wheel', handleWheel, { passive: false });
+
+    // 2. Safari WebKit Gesture Events (gesturestart, gesturechange, gestureend)
+    let gestureStartZoom = 1.0;
+    scrollContainer.addEventListener('gesturestart', (e) => {
+      e.preventDefault();
+      gestureStartZoom = currentZoom;
+    }, { passive: false });
+
+    scrollContainer.addEventListener('gesturechange', (e) => {
+      e.preventDefault();
+      const targetZoom = gestureStartZoom * e.scale;
+      applyZoom(targetZoom, { x: e.clientX, y: e.clientY }, false, false);
+    }, { passive: false });
+
+    scrollContainer.addEventListener('gestureend', (e) => {
+      e.preventDefault();
+      applyZoom(currentZoom, null, true, true);
+    }, { passive: false });
+
+    // 3. Touchscreen Multi-Touch Pinch (2 touches)
+    let touchDistance = null;
+    let touchBaseZoom = 1.0;
+    let touchFocal = null;
+
+    scrollContainer.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        const [t1, t2] = e.touches;
+        touchDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        touchBaseZoom = currentZoom;
+        touchFocal = {
+          x: (t1.clientX + t2.clientX) / 2,
+          y: (t1.clientY + t2.clientY) / 2
+        };
+      }
+    }, { passive: true });
+
+    scrollContainer.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2 && touchDistance) {
+        e.preventDefault();
+        const [t1, t2] = e.touches;
+        const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        if (touchDistance > 0) {
+          const scale = currentDist / touchDistance;
+          applyZoom(touchBaseZoom * scale, touchFocal, false, false);
+        }
+      }
+    }, { passive: false });
+
+    scrollContainer.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2 && touchDistance !== null) {
+        touchDistance = null;
+        applyZoom(currentZoom, null, true, true);
+      }
+    }, { passive: true });
+
+    // 4. Keyboard Shortcuts: Cmd/Ctrl + (+/=), Cmd/Ctrl + (-), Cmd/Ctrl + 0
+    window.addEventListener('keydown', (e) => {
+      if (!e.metaKey && !e.ctrlKey) return;
+
+      const isOverPreview = panePreview.matches(':hover') || scrollContainer.matches(':hover');
+      const isPreviewOnly = window.LectNoteApp?.getViewMode && window.LectNoteApp.getViewMode() === 'preview';
+
+      if (!isOverPreview && !isPreviewOnly) return;
+
+      if (e.key === '=' || e.key === '+') {
+        e.preventDefault();
+        zoomIn();
+      } else if (e.key === '-') {
+        e.preventDefault();
+        zoomOut();
+      } else if (e.key === '0') {
+        e.preventDefault();
+        resetZoom();
+      }
+    });
+
+    // 5. Drag-to-Pan (Moveable preview viewport horizontally & vertically)
+    let isPanning = false;
+    let panStartX = 0;
+    let panStartY = 0;
+    let panStartScrollLeft = 0;
+    let panStartScrollTop = 0;
+    let panMoved = false;
+    let isSpacePressed = false;
+    let panToolActive = false;
+
+    const btnPan = document.getElementById('btn-preview-pan');
+    if (btnPan) {
+      btnPan.addEventListener('click', (e) => {
+        e.preventDefault();
+        panToolActive = !panToolActive;
+        btnPan.classList.toggle('active', panToolActive);
+        scrollContainer.classList.toggle('pan-active', panToolActive);
+        updateCursorState();
+      });
+    }
+
+    function updateCursorState() {
+      if (isPanning === true) {
+        document.body.classList.add('is-preview-panning');
+        scrollContainer.classList.add('is-panning');
+      } else {
+        document.body.classList.remove('is-preview-panning');
+        scrollContainer.classList.remove('is-panning');
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !isSpacePressed) {
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+        if (activeTag === 'textarea' || activeTag === 'input') return;
+        const isOverPreview = panePreview.matches(':hover') || scrollContainer.matches(':hover');
+        if (isOverPreview) {
+          isSpacePressed = true;
+          scrollContainer.classList.add('space-pan');
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space' && isSpacePressed) {
+        isSpacePressed = false;
+        scrollContainer.classList.remove('space-pan');
+      }
+    });
+
+    function isInteractiveTarget(el) {
+      if (!el) return false;
+      return !!el.closest('button, a, input, textarea, select, .preview-zoom-toolbar, .btn-inspect-board, [role="button"]');
+    }
+
+    window.addEventListener('dragstart', (e) => {
+      if (isPanning || panToolActive || isSpacePressed || (currentZoom > 1.01 && scrollContainer.contains(e.target))) {
+        e.preventDefault();
+      }
+    });
+
+    scrollContainer.addEventListener('pointerdown', (e) => {
+      if (isInteractiveTarget(e.target)) return;
+
+      const isMiddle = e.button === 1;
+      const isLeft = e.button === 0;
+      if (!isMiddle && !isLeft) return;
+
+      const paper = document.getElementById('preview-paper');
+      const clickedOnCanvas = paper ? !paper.contains(e.target) : true;
+      const isOverflowing = scrollContainer.scrollHeight > scrollContainer.clientHeight + 4 || scrollContainer.scrollWidth > scrollContainer.clientWidth + 4;
+      const shouldDirectPan = isMiddle || panToolActive || isSpacePressed || (clickedOnCanvas && (currentZoom > 1.01 || isOverflowing));
+
+      panStartX = e.clientX;
+      panStartY = e.clientY;
+      panStartScrollLeft = scrollContainer.scrollLeft;
+      panStartScrollTop = scrollContainer.scrollTop;
+      panMoved = false;
+
+      if (shouldDirectPan) {
+        isPanning = true;
+        try { scrollContainer.setPointerCapture(e.pointerId); } catch (_) {}
+        try { window.getSelection()?.removeAllRanges(); } catch (_) {}
+        updateCursorState();
+        e.preventDefault();
+      } else if (currentZoom > 1.01 || isOverflowing) {
+        isPanning = 'pending';
+        try { scrollContainer.setPointerCapture(e.pointerId); } catch (_) {}
+      }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isPanning) return;
+
+      const dx = e.clientX - panStartX;
+      const dy = e.clientY - panStartY;
+
+      if (isPanning === 'pending') {
+        if (Math.hypot(dx, dy) > 3) {
+          isPanning = true;
+          try { window.getSelection()?.removeAllRanges(); } catch (_) {}
+          updateCursorState();
+        } else {
+          return;
+        }
+      }
+
+      panMoved = true;
+      scrollContainer.scrollLeft = panStartScrollLeft - dx;
+      scrollContainer.scrollTop = panStartScrollTop - dy;
+      e.preventDefault();
+    });
+
+    const endPan = () => {
+      if (!isPanning) return;
+      const wasPanning = isPanning === true;
+      isPanning = false;
+      updateCursorState();
+      if (wasPanning && panMoved) {
+        window.addEventListener('click', (clickEvt) => {
+          clickEvt.stopPropagation();
+          clickEvt.preventDefault();
+        }, { capture: true, once: true });
+      }
+    };
+
+    const handlePointerCancel = (e) => {
+      if (isPanning === true && e.buttons !== 0) {
+        return;
+      }
+      endPan();
+    };
+
+    window.addEventListener('pointerup', endPan);
+    window.addEventListener('pointercancel', handlePointerCancel);
+  }
+
+  // Auto-initialize when document is ready
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupZoomEvents);
+    } else {
+      setupZoomEvents();
+    }
+  }
+
   return {
     updatePreview,
     scrollToLine,
     highlightAndScrollSearch,
-    clearSearchHighlights
+    clearSearchHighlights,
+    initZoom: setupZoomEvents,
+    getZoom: () => currentZoom,
+    setZoom: (z, focal, persist) => applyZoom(z, focal, persist, true),
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    fitToWidth
   };
 })();
 

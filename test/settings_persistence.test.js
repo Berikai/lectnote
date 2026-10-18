@@ -37,6 +37,7 @@ describe('LectNote Desktop Settings & Session Persistence', () => {
       theme: 'academic',
       colorMode: 'dark',
       sidebarCollapsed: false,
+      viewMode: 'editor',
       lastScroll: {
         course: 'CS301-Algorithms',
         lecture: 'lecture-04-graph-traversal',
@@ -51,18 +52,42 @@ describe('LectNote Desktop Settings & Session Persistence', () => {
     assert.strictEqual(loaded.theme, 'academic');
     assert.strictEqual(loaded.colorMode, 'dark');
     assert.strictEqual(loaded.sidebarCollapsed, false);
+    assert.strictEqual(loaded.viewMode, 'editor');
     assert.strictEqual(loaded.lastScroll.editorTop, 340);
     assert.strictEqual(loaded.lastScroll.previewTop, 520);
 
     // Partial update preserves existing fields
-    saveSettings({ theme: 'notebook' });
+    saveSettings({ theme: 'notebook', viewMode: 'preview' });
     const updated = loadSettings();
     assert.strictEqual(updated.theme, 'notebook');
+    assert.strictEqual(updated.viewMode, 'preview');
     assert.strictEqual(updated.lastCourse, 'CS301-Algorithms');
     assert.strictEqual(updated.lastLecture, 'lecture-04-graph-traversal');
 
     // Clean up
     fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('constructs startup query parameters including view mode when present', () => {
+    const settings = {
+      lastCourse: 'MATH201-LinearAlgebra',
+      lastLecture: 'lecture-02-eigenvalues',
+      viewMode: 'preview'
+    };
+
+    const query = new URLSearchParams();
+    if (settings.lastCourse) query.set('course', settings.lastCourse);
+    if (settings.lastLecture) query.set('lecture', settings.lastLecture);
+    const lastView = settings.viewMode || settings.lastView;
+    if (lastView) query.set('view', lastView);
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+
+    assert.strictEqual(queryString, '?course=MATH201-LinearAlgebra&lecture=lecture-02-eigenvalues&view=preview');
+
+    const parsed = new URLSearchParams(queryString);
+    assert.strictEqual(parsed.get('course'), 'MATH201-LinearAlgebra');
+    assert.strictEqual(parsed.get('lecture'), 'lecture-02-eigenvalues');
+    assert.strictEqual(parsed.get('view'), 'preview');
   });
 
   it('constructs startup query parameters correctly from settings', () => {
