@@ -1,9 +1,43 @@
-const { describe, it } = require('node:test');
+const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert');
 const puppeteer = require('puppeteer');
 const { app } = require('../server/app');
 
+const PUPPETEER_OPTIONS = {
+  headless: true,
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu'
+  ]
+};
+
 describe('LectNote Preview Zoom & Touchpad Gestures', () => {
+  let server;
+  let baseUrl;
+  let browser;
+
+  before(async () => {
+    await new Promise((resolve) => {
+      server = app.listen(0, () => {
+        const port = server.address().port;
+        baseUrl = `http://127.0.0.1:${port}`;
+        resolve();
+      });
+    });
+    browser = await puppeteer.launch(PUPPETEER_OPTIONS);
+  });
+
+  after(async () => {
+    if (browser) {
+      try { await browser.close(); } catch (_) {}
+    }
+    if (server) {
+      try { await new Promise((r) => server.close(r)); } catch (_) {}
+    }
+  });
+
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 3.0;
   const DEFAULT_ZOOM = 1.0;
@@ -71,14 +105,10 @@ describe('LectNote Preview Zoom & Touchpad Gestures', () => {
   });
 
   it('renders zoom controls and performs zoom in, out, reset, and fit in browser UI', async () => {
-    const server = app.listen(0);
-    const port = server.address().port;
-
-    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
     try {
-      const page = await browser.newPage();
       await page.setViewport({ width: 1200, height: 800 });
-      await page.goto(`http://127.0.0.1:${port}`);
+      await page.goto(baseUrl);
 
       // Verify zoom toolbar and buttons are in the DOM
       const toolbarExists = await page.$('#preview-zoom-toolbar');
@@ -118,20 +148,15 @@ describe('LectNote Preview Zoom & Touchpad Gestures', () => {
       assert.strictEqual(await page.$eval('#preview-zoom-text', el => el.textContent.trim()), `${Math.round(fitZoom * 100)}%`);
 
     } finally {
-      await browser.close();
-      server.close();
+      await page.close();
     }
   });
 
   it('handles trackpad pinch gestures (ctrlKey wheel) with focal-point and preventDefault', async () => {
-    const server = app.listen(0);
-    const port = server.address().port;
-
-    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
     try {
-      const page = await browser.newPage();
       await page.setViewport({ width: 1200, height: 800 });
-      await page.goto(`http://127.0.0.1:${port}`);
+      await page.goto(baseUrl);
 
       // Dispatch trackpad pinch-out (zoom in) via wheel event with ctrlKey
       const pinchResult = await page.evaluate(() => {
@@ -186,20 +211,15 @@ describe('LectNote Preview Zoom & Touchpad Gestures', () => {
       assert.strictEqual(pinchInResult.badgeText, `${Math.round(pinchInResult.zoom * 100)}%`);
 
     } finally {
-      await browser.close();
-      server.close();
+      await page.close();
     }
   });
 
   it('handles Safari gesturechange events and touch pinch events', async () => {
-    const server = app.listen(0);
-    const port = server.address().port;
-
-    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
     try {
-      const page = await browser.newPage();
       await page.setViewport({ width: 1200, height: 800 });
-      await page.goto(`http://127.0.0.1:${port}`);
+      await page.goto(baseUrl);
 
       // Reset to 1.0
       await page.evaluate(() => window.LectNotePreview.resetZoom());
@@ -234,20 +254,15 @@ describe('LectNote Preview Zoom & Touchpad Gestures', () => {
       assert.strictEqual(gestureResult.paperZoom, '1.35');
 
     } finally {
-      await browser.close();
-      server.close();
+      await page.close();
     }
   });
 
   it('handles keyboard shortcuts (Cmd/Ctrl +, -, 0) when preview is active', async () => {
-    const server = app.listen(0);
-    const port = server.address().port;
-
-    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
     try {
-      const page = await browser.newPage();
       await page.setViewport({ width: 1200, height: 800 });
-      await page.goto(`http://127.0.0.1:${port}`);
+      await page.goto(baseUrl);
 
       // Switch to preview-only view mode
       await page.evaluate(() => {
@@ -279,22 +294,17 @@ describe('LectNote Preview Zoom & Touchpad Gestures', () => {
       assert.strictEqual(await page.evaluate(() => window.LectNotePreview.getZoom()), 1.0);
 
     } finally {
-      await browser.close();
-      server.close();
+      await page.close();
     }
   });
 
   it('restores zoom from localStorage upon page load and persists changes', async () => {
-    const server = app.listen(0);
-    const port = server.address().port;
-
-    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
     try {
-      const page = await browser.newPage();
       await page.setViewport({ width: 1200, height: 800 });
 
       // Pre-seed localStorage with zoom 1.5
-      await page.goto(`http://127.0.0.1:${port}`);
+      await page.goto(baseUrl);
       await page.evaluate(() => {
         localStorage.setItem('lectnote_preview_zoom', '1.5');
       });
@@ -317,20 +327,18 @@ describe('LectNote Preview Zoom & Touchpad Gestures', () => {
       assert.strictEqual(savedInStorage, '1');
 
     } finally {
-      await browser.close();
-      server.close();
+      try {
+        await page.evaluate(() => localStorage.clear());
+      } catch (_) {}
+      await page.close();
     }
   });
 
   it('updates rough notation css visual boundaries properly on zoom without double-zoom', async () => {
-    const server = app.listen(0);
-    const port = server.address().port;
-
-    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
     try {
-      const page = await browser.newPage();
       await page.setViewport({ width: 1200, height: 800 });
-      await page.goto(`http://127.0.0.1:${port}`);
+      await page.goto(baseUrl);
 
       const result = await page.evaluate(async () => {
         const sampleMd = '## 1. Key Principles\n\nWrite your concepts and derivations here.\n\n[Fundamental Equation]{.box #3b82f6}\n\n$$E = mc^2$$\n\n' + 'Filler note text\n\n'.repeat(10);
@@ -376,20 +384,15 @@ describe('LectNote Preview Zoom & Touchpad Gestures', () => {
       assert.ok(firefoxResult.ratio > 0.95, `Expected rough notation box ratio close to 1.0 in Firefox simulation, got ${firefoxResult.ratio}`);
 
     } finally {
-      await browser.close();
-      server.close();
+      await page.close();
     }
   });
 
   it('allows moving preview vertically and horizontally by dragging when zoomed in', async () => {
-    const server = app.listen(0);
-    const port = server.address().port;
-
-    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
     try {
-      const page = await browser.newPage();
       await page.setViewport({ width: 1200, height: 800 });
-      await page.goto(`http://127.0.0.1:${port}`);
+      await page.goto(baseUrl);
 
       await page.evaluate(async () => {
         const sampleMd = '## 1. Key Principles\n\n' + 'Filler text content for scrolling\n\n'.repeat(25);
@@ -460,8 +463,7 @@ describe('LectNote Preview Zoom & Touchpad Gestures', () => {
       assert.ok(scrollAfterPanBack.scrollTop < scrollAfterDrag.scrollTop, 'ScrollTop should decrease when dragged in reverse');
 
     } finally {
-      await browser.close();
-      server.close();
+      await page.close();
     }
   });
 });

@@ -1,18 +1,61 @@
-const { describe, it } = require('node:test');
+const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert');
+const path = require('node:path');
+const fs = require('node:fs');
 const puppeteer = require('puppeteer');
-const { app } = require('../server/app');
+const { app, getLecturesDir } = require('../server/app');
+
+const PUPPETEER_OPTIONS = {
+  headless: true,
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu'
+  ]
+};
 
 describe('LectNote Sticky Notes & Drawing Overlay Browser Tests', () => {
-  it('renders floating annotations toolbar, creates sticky notes, draws SVG paths, and toggles collapse', async () => {
-    const server = app.listen(0);
-    const port = server.address().port;
+  let server;
+  let baseUrl;
+  let browser;
 
-    const browser = await puppeteer.launch({ headless: true });
+  function cleanAnnotations() {
     try {
-      const page = await browser.newPage();
+      const annoFile = path.join(getLecturesDir(), 'CS301-Algorithms', 'lecture-04-graph-traversal', 'annotations.json');
+      if (fs.existsSync(annoFile)) {
+        fs.unlinkSync(annoFile);
+      }
+    } catch (_) {}
+  }
+
+  before(async () => {
+    cleanAnnotations();
+    await new Promise((resolve) => {
+      server = app.listen(0, () => {
+        const port = server.address().port;
+        baseUrl = `http://127.0.0.1:${port}`;
+        resolve();
+      });
+    });
+    browser = await puppeteer.launch(PUPPETEER_OPTIONS);
+  });
+
+  after(async () => {
+    if (browser) {
+      try { await browser.close(); } catch (_) {}
+    }
+    if (server) {
+      try { await new Promise((r) => server.close(r)); } catch (_) {}
+    }
+    cleanAnnotations();
+  });
+
+  it('renders floating annotations toolbar, creates sticky notes, draws SVG paths, and toggles collapse', async () => {
+    const page = await browser.newPage();
+    try {
       await page.setViewport({ width: 1200, height: 800 });
-      await page.goto(`http://127.0.0.1:${port}`);
+      await page.goto(baseUrl);
 
       // Wait for app and preview to be ready
       await page.waitForSelector('#preview-paper');
@@ -104,8 +147,7 @@ describe('LectNote Sticky Notes & Drawing Overlay Browser Tests', () => {
       assert.strictEqual(selectActive, true, 'Select tool should be active');
 
     } finally {
-      await browser.close();
-      await new Promise(r => server.close(r));
+      await page.close();
     }
   });
 });
