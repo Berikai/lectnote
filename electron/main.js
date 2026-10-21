@@ -279,7 +279,34 @@ function buildAppMenu() {
         { role: 'cut' },
         { role: 'copy' },
         { role: 'paste' },
-        { role: 'selectAll' }
+        { role: 'selectAll' },
+        { type: 'separator' },
+        {
+          label: 'Find...',
+          accelerator: 'CmdOrCtrl+F',
+          click: () => mainWindow?.webContents.send('menu:action', 'editor-find')
+        },
+        {
+          label: 'Find and Replace...',
+          accelerator: 'CmdOrCtrl+Alt+F',
+          click: () => mainWindow?.webContents.send('menu:action', 'editor-replace')
+        },
+        {
+          label: 'Find Next',
+          accelerator: 'CmdOrCtrl+G',
+          click: () => mainWindow?.webContents.send('menu:action', 'editor-find-next')
+        },
+        {
+          label: 'Find Previous',
+          accelerator: 'CmdOrCtrl+Shift+G',
+          click: () => mainWindow?.webContents.send('menu:action', 'editor-find-prev')
+        },
+        { type: 'separator' },
+        {
+          label: 'Go to Line...',
+          accelerator: 'CmdOrCtrl+L',
+          click: () => mainWindow?.webContents.send('menu:action', 'editor-go-to-line')
+        }
       ]
     },
     {

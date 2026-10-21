@@ -350,6 +350,19 @@ window.LectNoteApp = (function() {
           window.LectNotePreview?.resetZoom();
         } else if (action === 'preview-zoom-fit') {
           window.LectNotePreview?.fitToWidth();
+        } else if (action === 'editor-find') {
+          if (currentView === 'preview') applyViewMode('split', true);
+          window.LectNoteEditor?.openFind(false);
+        } else if (action === 'editor-replace') {
+          if (currentView === 'preview') applyViewMode('split', true);
+          window.LectNoteEditor?.openFind(true);
+        } else if (action === 'editor-find-next') {
+          window.LectNoteEditor?.findNext();
+        } else if (action === 'editor-find-prev') {
+          window.LectNoteEditor?.findPrev();
+        } else if (action === 'editor-go-to-line') {
+          if (currentView === 'preview') applyViewMode('split', true);
+          window.LectNoteEditor?.openGoToLine();
         }
       });
     }

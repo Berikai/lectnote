@@ -1375,12 +1375,64 @@ window.LectNotePreview = (function() {
     window.addEventListener('pointercancel', handlePointerCancel);
   }
 
+  function setupPreviewDblClickSync() {
+    const container = document.getElementById('preview-content');
+    if (!container) return;
+
+    container.addEventListener('dblclick', (e) => {
+      // Ignore clicks on inputs, buttons, or annotation tools
+      if (e.target.closest('#preview-annotations-toolbar, .sticky-note-input, button, input, textarea')) {
+        return;
+      }
+
+      // Find closest element with data-source-line
+      const lineEl = e.target.closest('[data-source-line]');
+      if (!lineEl) return;
+
+      const rawLine = lineEl.getAttribute('data-source-line');
+      const lineNum = parseInt(rawLine, 10);
+      if (isNaN(lineNum)) return;
+
+      // Extract clicked text or selection
+      let selectedText = '';
+      const sel = window.getSelection();
+      if (sel && sel.toString().trim()) {
+        selectedText = sel.toString().trim();
+      } else if (e.target.textContent) {
+        selectedText = e.target.textContent.trim().split(/\s+/)[0] || '';
+      }
+
+      // If current view mode is 'preview' only, switch to 'split' view so editor is visible
+      if (window.LectNoteApp && typeof window.LectNoteApp.getViewMode === 'function') {
+        if (window.LectNoteApp.getViewMode() === 'preview' && typeof window.LectNoteApp.applyViewMode === 'function') {
+          window.LectNoteApp.applyViewMode('split', true);
+        }
+      } else {
+        const paneEditor = document.getElementById('pane-editor');
+        if (paneEditor && (paneEditor.style.display === 'none' || window.getComputedStyle(paneEditor).display === 'none')) {
+          if (window.LectNoteApp && typeof window.LectNoteApp.applyViewMode === 'function') {
+            window.LectNoteApp.applyViewMode('split', true);
+          }
+        }
+      }
+
+      // Scroll editor and select target text
+      if (window.LectNoteEditor && typeof window.LectNoteEditor.scrollToLineAndSelect === 'function') {
+        window.LectNoteEditor.scrollToLineAndSelect(lineNum, selectedText);
+      }
+    });
+  }
+
   // Auto-initialize when document is ready
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', setupZoomEvents);
+      document.addEventListener('DOMContentLoaded', () => {
+        setupZoomEvents();
+        setupPreviewDblClickSync();
+      });
     } else {
       setupZoomEvents();
+      setupPreviewDblClickSync();
     }
   }
 

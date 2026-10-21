@@ -23,7 +23,7 @@
   <script defer src="/vendor/katex/contrib/auto-render.min.js"></script>
 
   <!-- Rough Notation -->
-  <script src="/vendor/rough-notation.iife.js"></script>
+  <script src="/vendor/rough-notation.iife.js?v=1.0.1"></script>
 
   <!-- Mermaid (Offline local vendor) -->
   <script src="/vendor/mermaid.min.js"></script>
@@ -390,6 +390,74 @@
             <span class="tool-label">Board Ref</span>
           </button>
         </div>
+
+        <div class="tool-separator"></div>
+
+        <div class="toolbar-group">
+          <button class="tool-btn" data-action="find" id="btn-editor-find" title="Find &amp; Replace in editor (⌘F / Ctrl+F)">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span class="tool-label">Find</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Floating Find & Replace Widget -->
+      <div id="editor-find-widget" class="editor-find-widget hidden" role="region" aria-label="Find and Replace">
+        <div class="find-row">
+          <button type="button" class="find-toggle-expand-btn" id="find-toggle-replace" title="Toggle Replace Row (Alt+Down)" aria-label="Toggle Replace">
+            <svg class="ui-icon chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="find-input-wrap">
+            <input type="text" id="find-input" class="find-input" placeholder="Find in lecture..." autocomplete="off" spellcheck="false" />
+            <span id="find-matches-count" class="find-matches-count">No results</span>
+          </div>
+          <div class="find-actions-group">
+            <button type="button" class="find-btn" id="btn-find-prev" title="Previous Match (Shift+Enter, ⌘⇧G)" aria-label="Previous Match">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+            <button type="button" class="find-btn" id="btn-find-next" title="Next Match (Enter, ⌘G)" aria-label="Next Match">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="find-opt-separator"></div>
+            <button type="button" class="find-opt-btn" id="btn-find-case" title="Match Case (Alt+C)" aria-label="Match Case">
+              <span>Aa</span>
+            </button>
+            <button type="button" class="find-opt-btn" id="btn-find-word" title="Match Whole Word (Alt+W)" aria-label="Match Whole Word">
+              <span>\b</span>
+            </button>
+            <button type="button" class="find-opt-btn" id="btn-find-regex" title="Use Regular Expression (Alt+R)" aria-label="Use Regular Expression">
+              <span>.*</span>
+            </button>
+            <div class="find-opt-separator"></div>
+            <button type="button" class="find-btn find-close-btn" id="btn-find-close" title="Close (Escape)" aria-label="Close Find">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="replace-row hidden" id="find-replace-row">
+          <div class="find-indent-spacer"></div>
+          <div class="replace-input-wrap">
+            <input type="text" id="replace-input" class="replace-input" placeholder="Replace with..." autocomplete="off" spellcheck="false" />
+          </div>
+          <div class="replace-actions-group">
+            <button type="button" class="find-action-btn" id="btn-replace-single" title="Replace Current Match (Alt+Enter)">Replace</button>
+            <button type="button" class="find-action-btn" id="btn-replace-all" title="Replace All Matches (⌘Alt+Enter / Ctrl+Alt+Enter)">Replace All</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Go To Line Popover -->
+      <div id="editor-goto-line-modal" class="editor-goto-line-modal hidden" role="dialog" aria-label="Go to Line">
+        <div class="goto-line-header">
+          <span class="goto-line-title">Go to Line</span>
+          <span class="goto-line-range" id="goto-line-range">1 - 1</span>
+          <button type="button" class="goto-line-close" id="btn-goto-line-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="goto-line-body">
+          <input type="number" id="goto-line-input" class="goto-line-input" min="1" step="1" placeholder="Line number..." />
+          <button type="button" class="btn btn-primary btn-sm" id="btn-goto-line-confirm">Go</button>
+        </div>
       </div>
 
       <div class="editor-wrapper">
@@ -422,7 +490,92 @@
           <div id="preview-content" class="content-body">
             <!-- Rendered content injected here -->
           </div>
+
+          <!-- Non-destructive Annotations Layer (Drawings & Sticky Notes) -->
+          <div id="preview-annotations-layer" class="preview-annotations-layer">
+            <svg id="drawing-svg-canvas" class="drawing-svg-canvas" xmlns="http://www.w3.org/2000/svg">
+              <g id="drawing-strokes-group"></g>
+              <path id="drawing-active-stroke" class="drawing-active-stroke" d="" />
+            </svg>
+            <div id="sticky-notes-container" class="sticky-notes-container"></div>
+          </div>
         </article>
+      </div>
+
+      <!-- Floating Annotations & Drawing Toolbar -->
+      <div class="preview-annotations-toolbar" id="preview-annotations-toolbar" role="toolbar" aria-label="Annotation & Drawing Tools">
+        <div class="annotation-tool-group">
+          <button type="button" class="anno-btn active" data-tool="select" id="btn-tool-select" title="Select & Drag Mode (V)" aria-label="Select Tool">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 3 7 18 3-7 7-3L3 3z"/></svg>
+          </button>
+          <button type="button" class="anno-btn" data-tool="pen" id="btn-tool-pen" title="Pen Drawing (P)" aria-label="Pen Tool">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+          </button>
+          <button type="button" class="anno-btn" data-tool="highlighter" id="btn-tool-highlighter" title="Highlighter (H)" aria-label="Highlighter Tool">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h3l6-6"/><path d="m22 7-4.5-4.5a2.1 2.1 0 0 0-3 0L3 14l7 7L21.5 9.5a2.1 2.1 0 0 0 0-3Z"/></svg>
+          </button>
+          <button type="button" class="anno-btn" data-tool="eraser" id="btn-tool-eraser" title="Eraser (E)" aria-label="Eraser Tool">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
+          </button>
+          <button type="button" class="anno-btn" id="btn-tool-sticky" title="Add Sticky Note (N)" aria-label="Add Sticky Note">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"/><path d="M15 3v5h6"/></svg>
+          </button>
+        </div>
+
+        <div class="anno-divider"></div>
+
+        <div class="annotation-palette-group" id="annotation-palette-group">
+          <button type="button" class="anno-color-btn active" data-color="#e11d48" style="--swatch-color: #e11d48;" title="Crimson Ink"></button>
+          <button type="button" class="anno-color-btn" data-color="#2563eb" style="--swatch-color: #2563eb;" title="Blue Ink"></button>
+          <button type="button" class="anno-color-btn" data-color="#16a34a" style="--swatch-color: #16a34a;" title="Green Ink"></button>
+          <button type="button" class="anno-color-btn" data-color="#d97706" style="--swatch-color: #d97706;" title="Amber Ink"></button>
+          <button type="button" class="anno-color-btn" data-color="#1e293b" style="--swatch-color: #1e293b;" title="Charcoal Ink"></button>
+        </div>
+
+        <div class="anno-divider"></div>
+
+        <div class="annotation-size-group">
+          <button type="button" class="anno-btn anno-size-btn" id="btn-anno-size" title="Cycle Stroke Thickness">
+            <span class="anno-size-indicator" id="anno-size-indicator"></span>
+          </button>
+        </div>
+
+        <div class="anno-divider"></div>
+
+        <div class="annotation-action-group">
+          <button type="button" class="anno-btn" id="btn-anno-undo" title="Undo (Cmd+Z / Ctrl+Z)" aria-label="Undo">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+          </button>
+          <button type="button" class="anno-btn" id="btn-anno-redo" title="Redo (Cmd+Shift+Z / Ctrl+Y)" aria-label="Redo">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+          </button>
+          <button type="button" class="anno-btn" id="btn-anno-visibility" title="Toggle Annotations Visibility" aria-label="Toggle Visibility">
+            <svg class="ui-icon icon-eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="ui-icon icon-eye-closed" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+          <button type="button" class="anno-btn" id="btn-anno-clear" title="Clear All Annotations" aria-label="Clear All">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Floating Preview Zoom Toolbar -->
+      <div class="preview-zoom-toolbar" id="preview-zoom-toolbar" role="toolbar" aria-label="Preview zoom controls">
+        <button type="button" id="btn-preview-zoom-out" class="preview-zoom-btn" title="Zoom Out (Cmd - / Ctrl -)" aria-label="Zoom Out">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button type="button" id="btn-preview-zoom-reset" class="preview-zoom-btn preview-zoom-level-btn" title="Click to reset zoom to 100% (Cmd 0 / Ctrl 0)" aria-label="Reset Zoom">
+          <span id="preview-zoom-text">100%</span>
+        </button>
+        <button type="button" id="btn-preview-zoom-in" class="preview-zoom-btn" title="Zoom In (Cmd + / Ctrl +)" aria-label="Zoom In">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button type="button" id="btn-preview-zoom-fit" class="preview-zoom-btn preview-zoom-fit-btn" title="Fit to width" aria-label="Fit to Width">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
+        <button type="button" id="btn-preview-pan" class="preview-zoom-btn preview-pan-btn" title="Toggle Pan Mode (Drag to move canvas horizontally &amp; vertically)" aria-label="Toggle Pan Tool">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+        </button>
       </div>
     </section>
 
@@ -1028,12 +1181,13 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Client-side Scripts -->
-  <script src="/scripts/preview.js"></script>
+  <script src="/scripts/preview.js?v=1.0.1"></script>
   <script src="/scripts/editor.js"></script>
   <script src="/scripts/photo-drawer.js"></script>
   <script src="/scripts/ingestion-modal.js"></script>
   <script src="/scripts/settings-modal.js"></script>
   <script src="/scripts/assistant.js"></script>
+  <script src="/scripts/annotations.js"></script>
   <script src="/scripts/app.js"></script>
 </body>
 </html>
